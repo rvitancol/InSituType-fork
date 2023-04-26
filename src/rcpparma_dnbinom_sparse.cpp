@@ -7,6 +7,7 @@
 // RcppArmadillo so that the build process will know what to do
 //
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(cpp11)]]
 using namespace Rcpp; 
 using namespace arma;
 
