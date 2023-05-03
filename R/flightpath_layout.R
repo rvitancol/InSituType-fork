@@ -37,9 +37,9 @@ flightpath_layout <- function(logliks = NULL, probs = NULL, profiles = NULL, clu
     conf$spread <- conf$min_dist * 1.1
     conf$n_neighbors <- ncol(probs)
     if (!is.null(profiles)) {
-      clustum <- umap(t(sqrt(profiles)), config = conf)$layout
+      clustum <- umap::umap(t(sqrt(profiles)), config = conf)$layout
     } else {
-      clustum <- umap(t(probs), config = conf)$layout
+      clustum <- umap::umap(t(probs), config = conf)$layout
     }
     
     cluster_xpos <- clustum[, 1]
