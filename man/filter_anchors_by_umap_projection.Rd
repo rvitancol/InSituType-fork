@@ -32,8 +32,7 @@ Input linear-scale expression, with genes in rows and cell types in columns.}
 \item{nn_cells}{Number of top nearest neighbors to the projected reference profiles to be selected as final anchor cells.}
 }
 \value{
-A list with two elements: anchors, a named vector for the final anchor cells;
- and anc_umap, the umap model derived from the expression profiles of anchor candidates.
+anchors, a named vector for the final anchor cells
 }
 \description{
 Calculates expression UMAP model for anchor candidates, then projects reference 

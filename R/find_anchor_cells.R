@@ -21,46 +21,14 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                              profiles, size = 10, 
                              min_cosine = 0.3) {
   
-  # infer bg if not provided: assume background is proportional to the scaling factor s
-  if (is.null(bg) && is.null(neg)) {
-    stop("Must provide either bg or neg")
-  }
-  if (is.null(bg)) {
-    s <- Matrix::rowMeans(counts)
-    bgmod <- stats::lm(neg ~ s - 1)
-    bg <- bgmod$fitted
-  }
-  if (length(bg) == 1) {
-    bg <- rep(bg, nrow(counts))
-    names(bg) <- rownames(counts)
-  }
+  # get vector of expected background:
+  bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
   
   ### align genes in counts and fixed_profiles
   if (align_genes && !is.null(profiles)) {
-    sharedgenes <- intersect(rownames(profiles), colnames(counts))
-    lostgenes <- setdiff(colnames(counts), rownames(profiles))
-    
-    # subset:
-    counts <- counts[, sharedgenes]
-    profiles <- profiles[sharedgenes, ]
-    
-    # warn about genes being lost:
-    if ((length(lostgenes) > 0) && length(lostgenes < 50)) {
-      message(
-        paste0(
-          "The following genes in the count data are missing from fixed_profiles and will be omitted from anchor selection: ",
-          paste0(lostgenes, collapse = ",")
-        )
-      )
-    }
-    if (length(lostgenes) > 50) {
-      message(
-        paste0(
-          length(lostgenes),
-          " genes in the count data are missing from fixed_profiles and will be omitted from anchor selection"
-        )
-      )
-    }
+    counts <- alignGenes(counts = counts, profiles = profiles)
+    profiles <- profiles[colnames(counts), ]
+
   }
   
   # get cosine distances:
@@ -277,8 +245,7 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #'  Input linear-scale expression, with genes in rows and cell types in columns.
 #' @param anchor_candidates Named vector of anchor candidates with cell_ID in name and corresponding cell type in values. 
 #' @param nn_cells Number of top nearest neighbors to the projected reference profiles to be selected as final anchor cells. 
-#' @return A list with two elements: anchors, a named vector for the final anchor cells;
-#'  and anc_umap, the umap model derived from the expression profiles of anchor candidates.
+#' @return anchors, a named vector for the final anchor cells
 #' @importFrom uwot umap umap_transform
 #' @importFrom spatstat.geom ppp nncross
 #' @export
@@ -301,46 +268,14 @@ filter_anchors_by_umap_projection <- function(counts,
   }
   
   # infer bg if not provided: assume background is proportional to the scaling factor s
-  if (is.null(bg) && is.null(neg)) {
-    stop("Must provide either bg or neg")
-  }
-  if (is.null(bg)) {
-    s <- Matrix::rowMeans(counts)
-    bgmod <- stats::lm(neg ~ s - 1)
-    bg <- bgmod$fitted
-  }
-  if (length(bg) == 1) {
-    bg <- rep(bg, nrow(counts))
-    names(bg) <- rownames(counts)
-  }
-  
+  bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
   
   ### align genes in counts and fixed_profiles
   if (align_genes && !is.null(profiles)) {
-    sharedgenes <- intersect(rownames(profiles), colnames(counts))
-    lostgenes <- setdiff(colnames(counts), rownames(profiles))
     
-    # subset:
-    counts <- counts[, sharedgenes]
-    profiles <- profiles[sharedgenes, ]
-    
-    # warn about genes being lost:
-    if ((length(lostgenes) > 0) && length(lostgenes < 50)) {
-      message(
-        paste0(
-          "The following genes in the count data are missing from fixed_profiles and will be omitted from anchor selection: ",
-          paste0(lostgenes, collapse = ",")
-        )
-      )
-    }
-    if (length(lostgenes) > 50) {
-      message(
-        paste0(
-          length(lostgenes),
-          " genes in the count data are missing from fixed_profiles and will be omitted from anchor selection"
-        )
-      )
-    }
+    counts <- alignGenes(counts = counts, profiles = profiles)
+    profiles <- profiles[colnames(counts), ]
+   
   }
   
   # net expression profiles of anchor candidates, cell x gene 
@@ -392,11 +327,8 @@ filter_anchors_by_umap_projection <- function(counts,
   # full vector for final anchors including all cells in anchor_candidates
   anchors <- setNames(anchors[names(anchor_candidates)], 
                       names(anchor_candidates))
-  
-  out <- list(anchors = anchors,
-              anc_umap = anc_umap)
 
-  return(out)
+  return(anchors)
 }
 
 
@@ -418,10 +350,10 @@ filter_anchors_by_umap_projection <- function(counts,
 #'  and blacklist, a named vector with genes in name, scale factor in values, for genes with extreme scale factor beyond the range of `scaleFactor_limits` and thus not included in the returned `adj_profiles`, return NULL if no blacklist gene.
 #' @importFrom reshape2 melt
 #' @export
-adjust_reference_for_platformEff <- function(ref_profiles, obs_profiles, 
-                                             min_ref = 1, cutoff_ref = 0.6, 
-                                             cutoff_obs = 0.9, 
-                                             scaleFactor_limits = c(0.01, 100)){
+adjustReferenceForPlatformEff <- function(ref_profiles, obs_profiles, 
+                                          min_ref = 1, cutoff_ref = 0.6, 
+                                          cutoff_obs = 0.9, 
+                                          scaleFactor_limits = c(0.01, 100)){
   cts_to_use <- intersect(colnames(ref_profiles), colnames(obs_profiles))
   if(length(cts_to_use)<3){
     stop(sprintf('%d cell types shared between `ref_profiles` and ` obs_profiles`. Must have at least 3 shared cell types for platform effect adjustment.', length(cts_to_use)))
@@ -522,3 +454,4 @@ adjust_reference_for_platformEff <- function(ref_profiles, obs_profiles,
   return(outs)
   
 }
+

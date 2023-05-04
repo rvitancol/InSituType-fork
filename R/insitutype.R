@@ -98,29 +98,13 @@ insitutype <- function(counts,
     stop("Cells with 0 counts were found. Please remove.")
   }
   
-  ## get neg in condition 
-  if (is.null(names(neg))) {
-    names(neg) <- rownames(counts)
-  }
-  if (length(neg) != nrow(counts)) {
-    stop("length of neg should equal nrows of counts.")
-  }
+  # get vector of expected background:
+  bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
   
   if (is.null(cohort)) {
-    cohort <- rep("all", length(neg))
+    cohort <- rep("all", length(bg))
   }
   
-  ### infer bg if not provided: assume background is proportional to the scaling factor s
-  if (is.null(bg)) {
-    s <- Matrix::rowMeans(counts)
-    bgmod <- stats::lm(neg ~ s - 1)
-    bg <- bgmod$fitted
-    names(bg) <- rownames(counts)
-  }
-  if (length(bg) == 1) {
-    bg <- rep(bg, nrow(counts))
-    names(bg) <- rownames(counts)
-  }
   
   #### update reference profiles ----------------------------------
   fixed_profiles <- NULL
@@ -143,21 +127,10 @@ insitutype <- function(counts,
   }
   # align the genes from fixed_profiles and counts
   if (align_genes && !is.null(fixed_profiles)) {
-    sharedgenes <- intersect(rownames(fixed_profiles), colnames(counts))
-    lostgenes <- setdiff(colnames(counts), rownames(fixed_profiles))
     
-    # subset to only the shared genes:
-    counts <- counts[, sharedgenes]
-    fixed_profiles <- fixed_profiles[sharedgenes, ]
+    counts <- alignGenes(counts = counts, profiles = fixed_profiles)
+    fixed_profiles <- fixed_profiles[colnames(counts), ]
     
-    # warn about genes being lost:
-    if ((length(lostgenes) > 0) && length(lostgenes < 50)) {
-      message(paste0("The following genes in the count data are missing from fixed_profiles and will be omitted from clustering: ",
-                     paste0(lostgenes, collapse = ",")))
-    }
-    if (length(lostgenes) > 50) {
-      message(paste0(length(lostgenes), " genes in the count data are missing from fixed_profiles and will be omitted from clustering"))
-    }
   }
 
   

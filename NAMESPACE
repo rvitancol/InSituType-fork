@@ -2,7 +2,7 @@
 
 export(Estep)
 export(Mstep)
-export(adjust_reference_for_platformEff)
+export(adjustReferenceForPlatformEff)
 export(chooseClusterNumber)
 export(choose_anchors_from_stats)
 export(colorCellTypes)
