@@ -1,3 +1,7 @@
+# InSituType 1.1.0
+
+* Support matrices with more than 4B elements
+
 # InSituType 1.0.0
 
 * License updated
