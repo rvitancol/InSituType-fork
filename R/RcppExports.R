@@ -27,8 +27,8 @@ lls_rna <- function(mat, s, x, bg, size_dnb) {
 #' @param mat dgCMatrix expression counts
 #' @param s numeric scaling factor
 #' @param x numeric expression for reference profile
+#' @param xsd numeric value for reference SD
 #' @param bg numeric background level
-#' @param sd double Standard deviation parameter
 #'
 #' @return rowSums for matrix of densities
 #' @useDynLib InSituType, .registration = TRUE

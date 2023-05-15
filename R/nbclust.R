@@ -280,7 +280,7 @@ nbclust <- function(counts,
     # derive first profiles from init_clust
     profiles_info <- Estep(counts = counts[!is.na(clust_old), ],
                       clust = init_clust[!is.na(clust_old)],
-                      neg = bg[!is.na(clust_old)])
+                      neg = bg[!is.na(clust_old)],
                       assay_type=assay_type)
     profiles <- profiles_info$profiles
     sds <- profiles_info$sds
@@ -322,7 +322,7 @@ nbclust <- function(counts,
     tempclust <- colnames(probs)[apply(probs, 1, which.max)]
     profiles_info <- Estep(counts = counts,
                       clust = tempclust,
-                      neg = bg)        
+                      neg = bg, 
                       assay_type=assay_type)
     
     profiles <- profiles_info$profiles

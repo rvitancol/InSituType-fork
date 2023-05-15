@@ -10,7 +10,9 @@ get_anchor_stats(
   bg = NULL,
   align_genes = TRUE,
   profiles,
+  sds,
   size = 10,
+  assay_type,
   min_cosine = 0.3
 )
 }
@@ -40,11 +42,4 @@ Compute the statistics used in finding anchor cells.
 Often the anchor cell selection process will involve some trial-and-error. 
 This function performs the computationally-expensive steps that only need to 
 happen once.
-}
-\examples{
-data("ioprofiles")
-data("mini_nsclc")
-get_anchor_stats(counts = mini_nsclc$counts,
-                 neg = Matrix::rowMeans(mini_nsclc$neg),
-                 profiles = ioprofiles)
 }

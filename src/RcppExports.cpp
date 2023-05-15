@@ -28,7 +28,7 @@ END_RCPP
 }
 // lls_protein
 Rcpp::NumericVector lls_protein(arma::sp_mat& mat, arma::vec& s, arma::vec& x, arma::vec& xsd, arma::vec& bg);
-RcppExport SEXP _InSituType_lls_protein(SEXP matSEXP, SEXP sSEXP, SEXP xSEXP, SEXP xsdSEXP , SEXP bgSEXP) {
+RcppExport SEXP _InSituType_lls_protein(SEXP matSEXP, SEXP sSEXP, SEXP xSEXP, SEXP xsdSEXP, SEXP bgSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;

@@ -318,6 +318,7 @@ NULL
 
       profiles_from_random_starts[[i]] <- tempNBclust$profiles
       sds_from_random_starts[[i]] <- tempNBclust$sds
+    }
     
     # find which profile matrix does best in the benchmarking subset:
     benchmarking_logliks <- c()

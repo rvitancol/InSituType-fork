@@ -4,7 +4,7 @@
 \alias{fastCohorting}
 \title{Quickly split cells into cohorts}
 \usage{
-fastCohorting(mat, n_cohorts = NULL, gaussian_transform = TRUE)
+fastCohorting(mat, n_cohorts = NULL, gaussian_transform = FALSE)
 }
 \arguments{
 \item{mat}{Matrix of variables to be used in cohorting, cells in rows, and variables in columns.
@@ -24,12 +24,4 @@ Rule of thumb: include any variables that might be informative for cell typing,
  perform differential expression as a function of spatial context, then it's 
  safer to exclude spatial context from the cell typing exercise (and therefore 
  from this function).
-}
-\examples{
-data("mini_nsclc")
-## simulate immunofluorescence data: 
-immunofluordata <- matrix(rpois(n = nrow(mini_nsclc$counts) * 4, lambda = 100), 
-                          nrow(mini_nsclc$counts))
-cohort <- fastCohorting(immunofluordata, gaussian_transform = TRUE)
-table(cohort)
 }

@@ -9,6 +9,7 @@ chooseClusterNumber(
   neg,
   bg = NULL,
   fixed_profiles = NULL,
+  fixed_sds = NULL,
   cohort = NULL,
   init_clust = NULL,
   n_clusts = 2:12,
@@ -17,6 +18,7 @@ chooseClusterNumber(
   align_genes = TRUE,
   plotresults = FALSE,
   nb_size = 10,
+  assay_type,
   pct_drop = 0.005,
   min_prob_increase = 0.05,
   ...
@@ -67,9 +69,4 @@ A list, with the following elements:
 \description{
 For a subset of the data, perform clustering under a range of cluster numbers.
  Report on loglikelihood vs. number of clusters, and suggest a best choice.
-}
-\examples{
-data("mini_nsclc")
-chooseClusterNumber(mini_nsclc$counts, Matrix::rowMeans(mini_nsclc$neg),
- n_clust = 2:5)
 }

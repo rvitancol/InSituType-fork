@@ -116,6 +116,7 @@ choose_anchors_from_stats <-
     
     if (is.null(anchorstats) && (is.null(cos) || is.null(llr))) {
       stop("Must provide either anchorstats or both cos and llr matrices.")
+    }
     use <- (anchors == cell) & !is.na(anchors)
     # get centroid:
     if (!is.null(neg)) {
