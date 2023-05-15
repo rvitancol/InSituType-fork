@@ -16,14 +16,7 @@
 #' @importFrom mclust predict.Mclust
 #' @importFrom mclust mclustBIC
 #' @importFrom stats qnorm
-#' @examples 
-#' data("mini_nsclc")
-#' ## simulate immunofluorescence data: 
-#' immunofluordata <- matrix(rpois(n = nrow(mini_nsclc$counts) * 4, lambda = 100), 
-#'                           nrow(mini_nsclc$counts))
-#' cohort <- fastCohorting(immunofluordata, gaussian_transform = TRUE)
-#' table(cohort)
-fastCohorting <- function(mat, n_cohorts = NULL, gaussian_transform = TRUE) {
+fastCohorting <- function(mat, n_cohorts = NULL, gaussian_transform = FALSE) {
   
   if (any(is.na(mat))) {
     stop("NA's detected in mat. fastCohorting needs complete data.")
@@ -47,7 +40,7 @@ fastCohorting <- function(mat, n_cohorts = NULL, gaussian_transform = TRUE) {
   
   # cluster in a subsample:
   sub <- sample(seq_len(nrow(mat)), min(20000, nrow(mat)))
-  mc <- mclust::Mclust(data = mat[sub, ], G = n_cohorts, modelNames = "EEE")
+  mc <- mclust::Mclust(data = mat[sub, ], G = n_cohorts, modelNames = "VVV")
   
   # classify all cells:
   cohort <- mclust::predict.Mclust(object = mc, newdata = mat)$classification

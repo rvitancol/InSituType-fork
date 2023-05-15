@@ -1,26 +1,33 @@
-#' Calculate the likelihood of the expression mat
-#'   using the reference profiles of x
+#' Get number of cores for parallelized operations
 #'
-#' @param x matrix of reference cell types, genes x profiles
-#' @param mat a matrix of expression levels in all cells, cells x genes
-#' @param bg background level (default: 0.01), usually vector length equal to
-#'   number of cells
+#' @return number of cores to use for mclapply
+#' @export
+numCores <- function() {
+  num_cores <- 1
+  if (.Platform$OS.type == "unix") {
+    if (is.null(getOption("mc.cores"))) {
+      num_cores <- parallel::detectCores() - 2
+    } else {
+      num_cores <- getOption("mc.cores")
+    }
+    
+  }
+  return(num_cores)
+}
+
+#' Calculate the likelihood of the vector x using the reference vector of y
+#'
+#' @param x a vector of a reference cell type
+#' @param mat a matrix of expression levels in all cells: for Protein data, we use raw data for calculating the scaling factor 
+#' @param bg background level (default: 0.01)
 #' @param size the parameters for dnbinom function (default: 10)
 #' @param digits the number of digits for rounding
 #'
 #' @importFrom Matrix rowSums
 #' @importFrom stats dnbinom
 #' @importFrom methods as is
-#' @return cells x profiles matrix of log likelihoods
-#' @examples
-#' data("mini_nsclc")
-#' data("ioprofiles")
-#' bg <- Matrix::rowMeans(mini_nsclc$neg)
-#' genes <- intersect(dimnames(mini_nsclc$counts)[[2]], dimnames(ioprofiles)[[1]])
-#' mat <- mini_nsclc$counts[, genes]
-#' x <- ioprofiles[genes, ]
-#' lldist(x = x, mat = mini_nsclc$counts, bg = Matrix::rowMeans(mini_nsclc$neg))
-lldist <- function(x, mat, bg = 0.01, size = 10, digits = 2) {
+#' @return likelihood for profile
+lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type) {
   # convert to matrix form if only a vector was input:
   if (is.vector(mat)) {
     mat <- as(matrix(mat, nrow = 1), "dgCMatrix")
@@ -34,34 +41,60 @@ lldist <- function(x, mat, bg = 0.01, size = 10, digits = 2) {
       )
     stop(errorMessage)
   }
+  # Check dimensions on bg and stop with informative error if not
+  #  conformant
   if (is.vector(bg)) {
-    # Check dimensions on bg and stop with informative error if not
-    #  conformant
     if (!identical(length(bg), nrow(mat))) {
       errorMessage <- sprintf("Dimensions of count matrix and background are not conformant.\nCount matrix rows: %d, length of bg: %d",
                               nrow(mat), length(bg))
       stop(errorMessage)
     }
-    bgsub <- mat
-    bgsub@x <- bgsub@x - bg[bgsub@i + 1]
-    bgsub@x <- pmax(bgsub@x, 0)
-    bgsub <- Matrix::rowSums(bgsub)
-    res <- fast_lldist(mat, bgsub, x, bg, size)
-  } else {
-    # non-optimized code used if bg is cell x gene matrix
-    bgsub <- pmax(mat - bg, 0)
-    res <- apply(x, 2, function(profile) {
-      sum_of_x <- sum(profile)
-      s <- Matrix::rowSums(bgsub) / sum_of_x
-      # override it if s is negative:
-      s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum_of_x
-      yhat <- s %*% t(profile) + bg
-      rowSums(stats::dnbinom(x = as.matrix(mat), size = size, mu = yhat, log = TRUE))
-    })
   }
-
-  rownames(res) <- rownames(mat)
-  colnames(res) <- colnames(x)
+  
+  # calc scaling factor to put y on the scale of x:
+  if (is.vector(bg)) {
+    bgsub <- mat
+    
+    # if(assay_type =="RNA"){
+      bgsub@x <- bgsub@x - bg[bgsub@i + 1]
+    # }
+    bgsub@x <- pmax(bgsub@x, 0)
+    
+  } else {
+    bgsub <- pmax(mat - bg, 0)
+  }
+  
+  sum_of_x <- sum(x)
+  s <- Matrix::rowSums(bgsub) / sum_of_x
+  
+  # override it if s is negative:
+  s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum_of_x
+  
+  if (is.vector(bg)) {
+    if(assay_type=="RNA"){
+      res <- lls_rna(mat, s, x, bg, size)
+    }else{
+      res <- lls_protein(mat=mat, s=s, x=x, xsd=xsd, bg=bg)
+    }
+  }else{
+    # non-optimized code used if bg is cell x gene matrix
+    if(assay_type =="RNA"){
+      yhat <- s %*% t(x) + bg
+      res <- stats::dnbinom(x = as.matrix(mat), size = size, mu = yhat, log = TRUE)
+      
+    }else{
+      yhat <- s %*% t(x)
+      ysd <- s %*% t(xsd)
+      ## Estimate SD for each Cell type and each Protein. 
+      ## Use the SD for all cells each protein with the same cell type although yhat is different across cells. means are more shift, but sd is overall distribution shape
+      
+      res <- stats::dnorm(x = as.matrix(mat), sd = ysd, mean = yhat, log = TRUE)
+      if(is.matrix(res)){
+        res <- Matrix::rowSums(res)
+      }
+    }
+  }
+  names(res) <- rownames(mat)
   return(round(res, digits))
 }
 
@@ -79,18 +112,24 @@ lldist <- function(x, mat, bg = 0.01, size = 10, digits = 2) {
 #' @param return_loglik If TRUE, logliks will be returned. If FALSE, probabilities will be returned. 
 #' @return Matrix of probabilities of each cell belonging to each cluster
 #' @export
-#' @examples 
-#' data("mini_nsclc")
-#' data("ioprofiles")
-#' sharedgenes <- intersect(rownames(ioprofiles), colnames(mini_nsclc$counts))
-#' Mstep(mini_nsclc$counts, ioprofiles[sharedgenes, ], bg = Matrix::rowMeans(mini_nsclc$neg), cohort = NULL)
-Mstep <- function(counts, means, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE) {
+Mstep <- function(counts, means, sds, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE, assay_type) {
   # get logliks of cells * clusters
-  logliks <- lldist(x = means,
-                    mat = counts,
-                    bg = bg,
-                    size = size,
-                    digits = digits)
+  if(assay_type=="RNA"){
+    logliks <- parallel::mclapply(asplit(means, 2),
+                                  lldist,
+                                  xsd=NULL,
+                                  mat = counts,
+                                  bg = bg,
+                                  size = size,
+                                  assay_type=assay_type,
+                                  mc.cores = numCores())
+    logliks <- do.call(cbind, logliks)
+  }else{
+    logliks <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = size, assay_type=assay_type)},
+                                  asplit(means, 2), asplit(sds, 2), mc.cores = numCores())
+    
+  }
+  
   
   # adjust by cohort frequency:
   logliks <- update_logliks_with_cohort_freqs(logliks = logliks, 
@@ -124,26 +163,29 @@ Mstep <- function(counts, means, cohort, bg = 0.01, size = 10, digits = 2, retur
 #'
 #' @return A matrix of cluster profiles, genes * clusters
 #' @export
-#' @examples 
-#' data("ioprofiles")
-#' unsup <- insitutype(
-#'  x = mini_nsclc$counts,
-#'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  n_clusts = 8,
-#'  n_phase1 = 200,
-#'  n_phase2 = 500,
-#'  n_phase3 = 2000,
-#'  n_starts = 1,
-#'  max_iters = 5
-#' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
-#' Estep(counts = mini_nsclc$counts, clust = unsup$clust, neg = Matrix::rowMeans(mini_nsclc$neg))
-Estep <- function(counts, clust, neg) {
+Estep <- function(counts, clust, neg, assay_type) {
 
   # get cluster means:
   means <- sapply(unique(clust), function(cl) {
-    pmax(Matrix::colMeans(counts[clust == cl, , drop = FALSE]) - mean(neg[clust == cl]), 0)
+    
+    if(assay_type =="RNA"){
+      means = pmax(Matrix::colMeans(counts[clust == cl, , drop = FALSE]) - mean(neg[clust == cl]), 0)
+    }else{
+      means = Matrix::colMeans(counts[clust == cl, , drop = FALSE])  #- mean(neg[clust == cl])
+    }
+    
   })
-  return(means)
+  sds <- sapply(unique(clust), function(cl) {
+    
+    if(assay_type =="RNA"){
+      sds = NULL
+    }else{
+      sds = apply(counts[clust == cl, , drop = FALSE], 2, sd)  #- sd(neg[clust == cl])
+    }
+    
+  })
+  
+  return(list(profiles=means, sds=sds))
 }
 
 
@@ -180,25 +222,21 @@ Estep <- function(counts, clust, neg) {
 #' \item probs: a matrix of probabilities of all cells (rows) belonging to all clusters (columns)
 #' \item profiles: a matrix of cluster-specific expression profiles
 #' }
-#' @examples 
-#' data("ioprofiles")
-#' data("mini_nsclc")
-#' sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
-#' nbclust(counts = mini_nsclc$counts[, sharedgenes],
-#'        neg =  Matrix::rowMeans(mini_nsclc$neg), bg = NULL,
-#'        fixed_profiles = ioprofiles[sharedgenes, 1:3],
-#'        init_profiles = NULL, init_clust = rep(c("a", "b"), nrow(mini_nsclc$counts) / 2),
-#'        nb_size = 10,
-#'        cohort = rep("a", nrow(mini_nsclc$counts)),
-#'        pct_drop = 1/10000,
-#'        min_prob_increase = 0.05, max_iters = 3, logresults = FALSE)
-nbclust <- function(counts, neg, bg = NULL, 
+nbclust <- function(counts, 
+                    neg, 
+                    assay_type, 
+                    bg = NULL, 
                     fixed_profiles = NULL,
-                    init_profiles = NULL, init_clust = NULL, 
-                    nb_size = 10, 
+                    fixed_sds = NULL,
+                    init_profiles = NULL, 
+                    init_sds = NULL, 
+                    init_clust = NULL, 
+                    nb_size = 10,
                     cohort = NULL, 
                     pct_drop = 1/10000,   
-                    min_prob_increase = 0.05, max_iters = 40, logresults = FALSE) {
+                    min_prob_increase = 0.05, 
+                    max_iters = 40, 
+                    logresults = FALSE) {
 
   #### preliminaries -----------------------------------
   # infer bg if not provided: assume background is proportional to the scaling factor s
@@ -233,23 +271,29 @@ nbclust <- function(counts, neg, bg = NULL,
     clust_old <- rep("unassigned", nrow(counts))
     names(clust_old) <- rownames(counts)
     profiles <- init_profiles
+    sds <- init_sds
   } 
   # if no init_profiles are provided, derive them:
-  if (is.null(init_profiles)) {
+  if (is.null(init_profiles) & is.null(init_sds)) {
     clust_old <- init_clust
     names(clust_old) <- rownames(counts)
     # derive first profiles from init_clust
-    profiles <- Estep(counts = counts[!is.na(clust_old), ],
+    profiles_info <- Estep(counts = counts[!is.na(clust_old), ],
                       clust = init_clust[!is.na(clust_old)],
                       neg = bg[!is.na(clust_old)])
+                      assay_type=assay_type)
+    profiles <- profiles_info$profiles
+    sds <- profiles_info$sds
+    
   }
   # keep fixed_profiles unchanged:
   if (length(profiles) == 0) {
     profiles <- NULL
   }
   profiles <- cbind(profiles[, setdiff(colnames(profiles), colnames(fixed_profiles)), drop = FALSE], fixed_profiles)
+  sds <- cbind(sds[, setdiff(colnames(sds), colnames(fixed_sds)), drop = FALSE], fixed_sds)
   clustnames <- colnames(profiles)
-  
+
   #### run EM algorithm iterations: ----------------------------------
   pct_changed <- c()
   if (logresults) {
@@ -262,26 +306,37 @@ nbclust <- function(counts, neg, bg = NULL,
     
     probs <- Mstep(counts = counts,
                    means = profiles,
+                   sds=sds,
                    cohort = cohort, 
                    bg = bg,
-                   size = nb_size)
+                   size = nb_size,
+                   assay_type=assay_type)
     if (logresults) {
       clusterlog <- cbind(clusterlog, colnames(probs)[apply(probs, 1, which.max)])
     }
     
     oldprofiles <- profiles
-
+    oldsds <- sds
+    
     # E-step: update profiles:
     tempclust <- colnames(probs)[apply(probs, 1, which.max)]
-    profiles <- Estep(counts = counts,
+    profiles_info <- Estep(counts = counts,
                       clust = tempclust,
                       neg = bg)        
+                      assay_type=assay_type)
+    
+    profiles <- profiles_info$profiles
+    sds <- profiles_info$sds
     
     # for any profiles that have been lost, replace them with their previous version:
     lostprofiles <- setdiff(clustnames, colnames(profiles))
     profiles <- cbind(profiles, oldprofiles[, lostprofiles, drop = FALSE])[, clustnames]
+    
+    sds <- cbind(sds, oldsds[, lostprofiles, drop = FALSE])[, clustnames]
+    
     # keep fixed_profiles unchanged:
     profiles[, colnames(fixed_profiles)] <- as.vector(fixed_profiles)
+    sds[, colnames(fixed_sds)] <- as.vector(fixed_sds)
     
     # get cluster assignment
     clust <- colnames(probs)[apply(probs, 1, which.max)]
@@ -309,6 +364,7 @@ nbclust <- function(counts, neg, bg = NULL,
   out <- list(clust = clust,
              probs = probs,
              profiles = sweep(profiles, 2, colSums(profiles), "/") * 1000,
+             sds = sweep(sds, 2, colSums(sds), "/") * 1000,
              pct_changed = pct_changed,
              clusterlog = clusterlog)
   return(out)
@@ -317,8 +373,7 @@ nbclust <- function(counts, neg, bg = NULL,
 #' For a numeric object, return a logical object of whether each element is the max or not.
 #' @param x a vector of values
 #' @return a vecetor of logical values
-#' @examples
-#' ismax(c(3, 5, 5, 2))
+#'
 ismax <- function(x) {
   return(x == max(x, na.rm = TRUE))
 }

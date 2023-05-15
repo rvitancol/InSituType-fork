@@ -6,8 +6,8 @@
 #' Probability density function of the negative binomial distribution (written in C++)
 #'
 #' @param mat dgCMatrix expression counts
-#' @param bgsub vector of background expression per cell
-#' @param x numeric expression for reference profiles
+#' @param s numeric scaling factor
+#' @param x numeric expression for reference profile
 #' @param bg numeric background level
 #' @param size_dnb int Dispersion parameter
 #'
@@ -16,7 +16,26 @@
 #' @importFrom Rcpp evalCpp
 #' @exportPattern "^[[:alpha:]]+" 
 #' @export
-fast_lldist <- function(mat, bgsub, x, bg, size_dnb) {
-    .Call(`_InSituType_fast_lldist`, mat, bgsub, x, bg, size_dnb)
+lls_rna <- function(mat, s, x, bg, size_dnb) {
+    .Call(`_InSituType_lls_rna`, mat, s, x, bg, size_dnb)
+}
+
+#' sum from negative binomial density function
+#'
+#' Probability density function of the negative binomial distribution (written in C++)
+#'
+#' @param mat dgCMatrix expression counts
+#' @param s numeric scaling factor
+#' @param x numeric expression for reference profile
+#' @param bg numeric background level
+#' @param sd double Standard deviation parameter
+#'
+#' @return rowSums for matrix of densities
+#' @useDynLib InSituType, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @exportPattern "^[[:alpha:]]+" 
+#' @export
+lls_protein <- function(mat, s, x, xsd, bg) {
+    .Call(`_InSituType_lls_protein`, mat, s, x, xsd, bg)
 }
 

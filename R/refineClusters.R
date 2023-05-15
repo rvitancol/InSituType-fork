@@ -104,7 +104,7 @@ refineClusters <- function(merges = NULL, to_delete = NULL, subcluster = NULL, l
     message(paste0("Subclustering ", name))
     use <- which(colnames(newlogliks)[apply(newlogliks, 1, which.max)] == name)
     # run insitutype on just the named cell type:
-    temp <- insitutype(x = counts[use, ],
+    temp <- insitutype(counts = counts[use, ],
                        neg = neg[use],
                        bg = bg[use],
                        cohort = cohort[use],
@@ -144,17 +144,21 @@ refineClusters <- function(merges = NULL, to_delete = NULL, subcluster = NULL, l
   # re-calculate profiles if available:
   profiles <- NULL
   if (!is.null(counts) && !is.null(neg)) {
-    profiles <- Estep(counts = counts,
-                      clust = clust,
-                      neg = neg)
+    profiles_info <- Estep(counts = counts,
+                           clust = clust,
+                           neg = neg)
+    profiles <- profiles_info$profiles
+    sds <- profiles_info$sds
+    
   }
   # aligns profiles and logliks, removing lost clusters:
   logliks_from_lost_celltypes <- newlogliks[, !is.element(colnames(newlogliks), unique(clust)), drop = FALSE]
   newlogliks <- newlogliks[, is.element(colnames(newlogliks), clust), drop = FALSE]
   profiles <- profiles[, colnames(newlogliks), drop = FALSE]
+  sds <- sds[, colnames(newlogliks), drop = FALSE]
   
   out <- list(clust = clust, prob = prob, logliks = round(newlogliks, 4), # (rounding logliks to save memory)
-              profiles = profiles, logliks_from_lost_celltypes = round(logliks_from_lost_celltypes, 4))  
+              profiles = profiles, sds=sds, logliks_from_lost_celltypes = round(logliks_from_lost_celltypes, 4))  
   return(out)
 }
 
@@ -164,9 +168,6 @@ refineClusters <- function(merges = NULL, to_delete = NULL, subcluster = NULL, l
 #' @param probs probability matrix
 #'
 #' @return log-transformed matrix
-#' @examples 
-#' a <- runif(10)
-#' probs2logliks(a/sum(a))
 probs2logliks <- function(probs) {
   return(log(probs))
 }
@@ -177,20 +178,6 @@ probs2logliks <- function(probs) {
 #' From cell x cluster log-likelihoods, calculate cell x cluster probabilities
 #' @param logliks Matrix of loglikelihoods, as output by insitytupe. Cells in rows, clusters in columns.
 #' @return A matrix of probabilities, in the same dimensions as logliks. 
-#' @examples 
-#' data("mini_nsclc")
-#' unsup <- insitutype(
-#'  x = mini_nsclc$counts,
-#'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  n_clusts = 8,
-#'  n_phase1 = 200,
-#'  n_phase2 = 500,
-#'  n_phase3 = 2000,
-#'  n_starts = 1,
-#'  max_iters = 5
-#' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
-#' logliks2probs(unsup$logliks)
-#' 
 logliks2probs <- function(logliks) {
   templogliks <- sweep(logliks, 1, apply(logliks, 1, max, na.rm = TRUE), "-")
   # get on likelihood scale:

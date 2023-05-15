@@ -33,15 +33,12 @@
 #' \itemize{
 #'  \item
 #' }
-#' @examples
-#' data("mini_nsclc")
-#' chooseClusterNumber(mini_nsclc$counts, Matrix::rowMeans(mini_nsclc$neg),
-#'  n_clust = 2:5)
 chooseClusterNumber <-
   function(counts,
            neg,
            bg = NULL,
            fixed_profiles = NULL,
+           fixed_sds = NULL,
            cohort = NULL,
            init_clust = NULL,
            n_clusts = 2:12,
@@ -50,6 +47,7 @@ chooseClusterNumber <-
            align_genes = TRUE,
            plotresults = FALSE,
            nb_size = 10,
+           assay_type,
            pct_drop = 0.005,
            min_prob_increase = 0.05,
            ...) {
@@ -82,6 +80,7 @@ chooseClusterNumber <-
     sharedgenes <- intersect(rownames(fixed_profiles), colnames(counts))
     counts <- counts[, sharedgenes]
     fixed_profiles <- fixed_profiles[sharedgenes, ]
+    fixed_sds <- fixed_sds[sharedgenes, ]
   }  
   # cluster under each value of n_clusts, and save loglik:
   totallogliks <- sapply(n_clusts, function(x) {
@@ -97,18 +96,43 @@ chooseClusterNumber <-
       neg = neg, 
       bg = bg, 
       fixed_profiles = fixed_profiles,
+      fixed_sds = fixed_sds, 
       cohort = cohort,
       init_clust = tempinit,
       nb_size = nb_size,
+      assay_type=assay_type,
       pct_drop = pct_drop,
       min_prob_increase = min_prob_increase,
       max_iters = max_iters)  
 
     # get the loglik of the clustering result:
-    loglik_thisclust <- lldist(x = tempclust$profiles,
-                               mat = counts,
-                               bg = bg,
-                               size = nb_size)
+    if(assay_type=="RNA"){
+      
+      loglik_thisclust <- parallel::mclapply(asplit(tempclust$profiles, 2),
+                                             lldist,
+                                             xsd = NULL, 
+                                             mat = counts,
+                                             bg = bg,
+                                             size = nb_size,
+                                             assay_type=assay_type,
+                                             mc.cores = numCores())
+      
+      loglik_thisclust <- do.call(cbind, loglik_thisclust)
+    }else{
+      
+      loglik_thisclust <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = nb_size, assay_type=assay_type)},
+                                    asplit(tempclust$profiles, 2), asplit(tempclust$sds, 2), mc.cores = numCores())
+      
+      # loglik_thisclust <- lapply(names(asplit(means, 2)),  function(i){lldist(x=asplit(tempclust$profiles, 2)[[i]], 
+      #                                                                         xsd=asplit(tempclust$sds, 2)[[i]], 
+      #                                                                         mat=counts, 
+      #                                                                         bg = bg, 
+      #                                                                         size = nb_size, 
+      #                                                                         assay_type=assay_type)})
+      # 
+      # names(loglik_thisclust) <- names(asplit(means, 2))
+      
+    }
     total_loglik_this_clust <- sum(apply(loglik_thisclust, 1, max))
     return(total_loglik_this_clust)
   })

@@ -15,15 +15,10 @@
 #' @param min_cosine Cells must have at least this much cosine similarity to a fixed profile to be used as an anchor.
 #' @return A list with two elements: cos, the matrix of cosine distances;
 #'  and llr, the matrix of log likelihood ratios of each cell under each cell type vs. the 2nd best cell type.
+#' @importFrom lsa cosine
 #' @export
-#' @examples
-#' data("ioprofiles")
-#' data("mini_nsclc")
-#' get_anchor_stats(counts = mini_nsclc$counts,
-#'                  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'                  profiles = ioprofiles)
 get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
-                             profiles, size = 10, 
+                             profiles, sds, size = 10, assay_type, 
                              min_cosine = 0.3) {
   
   # get vector of expected background:
@@ -33,25 +28,25 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
   if (align_genes && !is.null(profiles)) {
     counts <- alignGenes(counts = counts, profiles = profiles)
     profiles <- profiles[colnames(counts), ]
-    
+    sds <- sds[colnames(counts), ]
   }
   
   # get cosine distances:
-  cos_numerator <- counts %*% profiles
-  counts2 <- as(counts, "dgCMatrix")
-  counts2@x <- counts2@x^2
-  rs <- sqrt(Matrix::rowSums(counts2))
-  ps <- sqrt(Matrix::colSums(profiles^2))
-  cos_denominator <- (t(t(rs))) %*% ps
-  cos <- as.matrix(cos_numerator / cos_denominator)
+  cos <- matrix(NA, nrow(counts), ncol(profiles),
+                dimnames = list(rownames(counts), colnames(profiles)))
+  cos <- sapply(colnames(profiles), function(cell) {
+    cos[, cell] <- apply(counts, 1, cosine, profiles[, cell])
+  })
   
   # stats for which cells to get loglik on: 
   # get 3rd hightest cosines of each cell:
   cos3 <- apply(cos, 1, function(x) {
     return(x[order(x, decreasing = TRUE)[3]])
   })
+  
   # get cells with sufficient cosine:
   cells_with_high_cos <- apply(cos, 1, max) > min_cosine
+  
   # get logliks (only when the cosine similarity is high enough to be worth considering):
   logliks <- sapply(colnames(profiles), function(cell) {
     templl <- cos[, cell] * NA
@@ -59,8 +54,10 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
     if (length(usecells) > 0) {
       templl[usecells] <- Mstep(counts = counts[usecells, ], 
                                 means = profiles[, cell, drop = FALSE],
+                                sds = sds[, cell, drop = FALSE],
                                 cohort = rep("all", length(usecells)),
                                 bg = bg[usecells], 
+                                assay_type = assay_type,
                                 size = size, 
                                 digits = 3, return_loglik = TRUE) 
       # scale the logliks by total counts:
@@ -103,30 +100,6 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #' @return A vector holding anchor cell assignments (or NA) for each cell in the
 #'   counts matrix
 #' @export
-#' @examples 
-#' data("ioprofiles")
-#' data("mini_nsclc")
-#' counts <- mini_nsclc$counts
-#' astats <- get_anchor_stats(counts = counts,
-#'                          neg = Matrix::rowMeans(mini_nsclc$neg),
-#'                          profiles = ioprofiles)
-#'
-#' ## estimate per-cell bg as a fraction of total counts:
-#' negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
-#' per.cell.bg <- rowSums(counts) * negmean.per.totcount
-#'
-#' # now choose anchors:
-#' choose_anchors_from_stats(counts = counts, 
-#'                           neg = Matrix::rowMeans(mini_nsclc$neg),
-#'                           bg = per.cell.bg,
-#'                           anchorstats = astats, 
-#'                           # a very low value chosen for the mini
-#'                           # dataset. Typically hundreds of cells
-#'                           # would be better.
-#'                           n_cells = 50, 
-#'                           min_cosine = 0.4, 
-#'                           min_scaled_llr = 0.03, 
-#'                           insufficient_anchors_thresh = 5)
 choose_anchors_from_stats <-
   function(counts,
            neg = NULL,
@@ -137,11 +110,18 @@ choose_anchors_from_stats <-
            n_cells = 500,
            min_cosine = 0.3,
            min_scaled_llr = 0.01,
-           insufficient_anchors_thresh = 20) {
+           insufficient_anchors_thresh = 20,
+           assay_type) {
     
     
     if (is.null(anchorstats) && (is.null(cos) || is.null(llr))) {
       stop("Must provide either anchorstats or both cos and llr matrices.")
+    use <- (anchors == cell) & !is.na(anchors)
+    # get centroid:
+    if (!is.null(neg)) {
+      mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = neg[use], assay_type=assay_type)$profiles
+    } else {
+      mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = bg[use], assay_type=assay_type)$profiles
     }
     
     # get input:
@@ -232,15 +212,8 @@ choose_anchors_from_stats <-
 #'   counts matrix
 #' @importFrom lsa cosine
 #' @export
-#' @examples 
-#' data("ioprofiles")
-#' data("mini_nsclc")
-#' sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
-#' find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], 
-#'                   neg = Matrix::rowMeans(mini_nsclc$neg),
-#'                   profiles = ioprofiles)
 find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
-                              profiles, size = 10, n_cells = 500, 
+                              profiles, sds=sds, size = 10, assay_type,  n_cells = 500, 
                               min_cosine = 0.3, min_scaled_llr = 0.01, 
                               insufficient_anchors_thresh = 20,
                               refinement = FALSE) {
@@ -256,7 +229,9 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                                   bg = bg, 
                                   align_genes = FALSE,
                                   profiles = profiles, 
+                                  sds=sds, 
                                   size = size, 
+                                  assay_type=assay_type, 
                                   min_cosine = min_cosine)  
   
   # select anchors based on stats:
@@ -270,7 +245,8 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                                        n_cells = ifelse(refinement, n_cells*2, n_cells), 
                                        min_cosine = min_cosine, 
                                        min_scaled_llr = min_scaled_llr, 
-                                       insufficient_anchors_thresh = insufficient_anchors_thresh) 
+                                       insufficient_anchors_thresh = insufficient_anchors_thresh, 
+                                       assay_type=assay_type) 
   
   if(refinement){
     # refine anchors via projection:

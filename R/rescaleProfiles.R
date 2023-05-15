@@ -37,42 +37,12 @@
 #'     \item{refit_res}{a list of 2 elements, `refitted_profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 #' }
 #' @export
-#' @examples
-#' data("mini_nsclc")
-#' data("ioprofiles")
-#' counts <- mini_nsclc$counts
-#' astats <- get_anchor_stats(counts = mini_nsclc$counts,
-#'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  profiles = ioprofiles)
-#'
-#' # estimate per-cell bg as a fraction of total counts:
-#' negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
-#' per.cell.bg <- rowSums(counts) * negmean.per.totcount
-#'
-#' # now choose anchors:
-#' anchors <- choose_anchors_from_stats(counts = counts, 
-#'                                     neg = mini_nsclc$negmean, 
-#'                                     bg = per.cell.bg,
-#'                                     anchorstats = astats, 
-#'                                     # a very low value chosen for the mini
-#'                                     # dataset. Typically hundreds of cells
-#'                                     # would be better.
-#'                                     n_cells = 50, 
-#'                                     min_cosine = 0.4, 
-#'                                     min_scaled_llr = 0.03, 
-#'                                     insufficient_anchors_thresh = 5)
-#'
-#' # The next step is to use the anchors to update the reference profiles:
-#'
-#' updateReferenceProfiles(reference_profiles = ioprofiles, 
-#'                        counts = mini_nsclc$counts, 
-#'                        neg = mini_nsclc$neg, 
-#'                        bg = per.cell.bg,
-#'                        anchors = anchors) 
 updateReferenceProfiles <-
   function(reference_profiles,
+           reference_sds,
            counts,
            neg,
+           assay_type, 
            bg = NULL,
            nb_size = 10,
            anchors = NULL,
@@ -133,6 +103,8 @@ updateReferenceProfiles <-
                                  bg = bg, 
                                  align_genes = FALSE,
                                  profiles = reference_profiles[sharedgenes, ],  
+                                 sds = reference_sds[sharedgenes, ], 
+                                 assay_type=assay_type,
                                  anchor_candidates = anchors, 
                                  nn_cells = n_anchor_cells,
                                  insufficient_anchors_thresh = insufficient_anchors_thresh)
@@ -182,6 +154,7 @@ updateReferenceProfiles <-
                                           min_cosine = min_anchor_cosine, 
                                           min_scaled_llr = min_anchor_llr,
                                           insufficient_anchors_thresh = insufficient_anchors_thresh, 
+                                          assay_type=assay_type,
                                           align_genes = FALSE, 
                                           refinement = refinement) 
       if (is.null(anchors_second)){
@@ -210,17 +183,18 @@ updateReferenceProfiles <-
     ## step 4: refit the reference profiles using the second around of anchors 
     if(refit){
       # refit original reference profiles given the anchors, will include lostgenes from platform effect estimation  
-      refitted_profiles <- updateProfilesFromAnchors(counts = counts[, sharedgenes],  
+      refitted_profiless_info <- updateProfilesFromAnchors(counts = counts[, sharedgenes],  
                                                      neg = neg, 
                                                      bg = bg,
                                                      anchors = anchors, 
                                                      reference_profiles = reference_profiles[sharedgenes, ],
                                                      align_genes = FALSE, 
+                                                     assay_type=assay_type,
                                                      nb_size = nb_size)
-      outs[['refit_res']] <- list(refitted_profiles = refitted_profiles, 
+      outs[['refit_res']] <- list(refitted_profiles = refitted_profiless_info$updated_profiles, 
                                   anchors = anchors)
-      outs[['updated_profiles']] <- refitted_profiles
-      
+      outs[['updated_profiles']] <- refitted_profiles$updated_profiles
+      outs[['updated_sds']] <- refitted_profiless_info$updated_sds
     }
     
     outs[['blacklist']] <- blacklist
@@ -266,10 +240,15 @@ updateProfilesFromAnchors <-
            max_rescaling = 5) {
     bg <- estimateBackground(counts, neg, bg)
     use <- !is.na(anchors)
-    updated_profiles <- Estep(counts = counts[use, ],
-                              clust = anchors[use],
-                              neg = bg[use])
-    return(updated_profiles)
+    updated_profiles_info <- Estep(counts = counts[use, ],
+                          clust = anchors[use],
+                          neg = bg[use], 
+                          assay_type=assay_type)
+    updated_profiles <- updated_profiles_info$profiles
+    updated_sds <- updated_profiles_info$sds
+    
+    return(list(updated_profiles=updated_profiles, 
+                updated_sds=updated_sds))
   }
 
 
