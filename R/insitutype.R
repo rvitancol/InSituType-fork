@@ -343,6 +343,14 @@ NULL
     }
     best_start <- which.max(benchmarking_logliks)
     tempprofiles <- profiles_from_random_starts[[best_start]]
+
+    if(assay_type %in% c("RNA", "Rna", "rna")){
+      tempsds <- NULL
+    }
+    
+    if(assay_type %in% c("Protein", "protein")){
+      tempsds <- sds_from_random_starts[[best_start]]
+    }
     
     rm(profiles_from_random_starts)
     rm(sds_from_random_starts)

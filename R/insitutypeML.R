@@ -47,14 +47,16 @@ insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference
                                   xsd=NULL,
                                   mat = counts,
                                   bg = bg,
-                                  size = size,
+                                  size = nb_size,
                                   assay_type=assay_type,
                                   mc.cores = numCores())
     
     logliks <- do.call(cbind, logliks)
-  }else{
-    
-    logliks <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = size, assay_type=assay_type)},
+
+  }
+  if(assay_type %in% c("Protein", "protein")){
+
+    logliks <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = nb_size, assay_type=assay_type)},
                                   asplit(reference_profiles, 2), asplit(reference_sds, 2), mc.cores = numCores())
 
   }

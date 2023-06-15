@@ -262,7 +262,7 @@ nbclust <- function(counts,
   
   #### get initial profiles: ----------------------------------
   
-  if (is.null(init_profiles) && is.null(init_clust)) {
+  if ((is.null(init_profiles) && is.null(init_clust))|(is.null(init_profiles) && is.null(init_sds) && is.null(init_clust)) ) {
     stop("Must specify either init_clust or init_profiles")
   }
 
@@ -273,8 +273,12 @@ nbclust <- function(counts,
     profiles <- init_profiles
     sds <- init_sds
   } 
-  # if no init_profiles are provided, derive them:
-  if (is.null(init_profiles) & is.null(init_sds)) {
+<<<<<<< Updated upstream
+
+=======
+>>>>>>> Stashed changes
+  # if no init_profiles for RNA & protein, derive them:
+  if (is.null(init_profiles)) {
     clust_old <- init_clust
     names(clust_old) <- rownames(counts)
     # derive first profiles from init_clust
@@ -285,13 +289,31 @@ nbclust <- function(counts,
     profiles <- profiles_info$profiles
     sds <- profiles_info$sds
     
+
+    ## if no init_sds is provided, use the derived SD profiles
+    ## otherwise, use the init_sds
+    if(assay_type %in% c("Protein", "protein")){
+      if(is.null(init_sds)){
+        sds <- profiles_info$sds
+      }else{
+        sds <- init_sds
+      }
+    }
+    if(assay_type %in% c("RNA", "Rna", "rna")){
+      sds <- NULL
+    }
   }
   # keep fixed_profiles unchanged:
   if (length(profiles) == 0) {
     profiles <- NULL
   }
   profiles <- cbind(profiles[, setdiff(colnames(profiles), colnames(fixed_profiles)), drop = FALSE], fixed_profiles)
-  sds <- cbind(sds[, setdiff(colnames(sds), colnames(fixed_sds)), drop = FALSE], fixed_sds)
+
+  
+  if(assay_type %in% c("Protein", "protein")){
+    sds <- cbind(sds[, setdiff(colnames(sds), colnames(fixed_sds)), drop = FALSE], fixed_sds)
+  }
+
   clustnames <- colnames(profiles)
 
   #### run EM algorithm iterations: ----------------------------------
@@ -332,12 +354,24 @@ nbclust <- function(counts,
     lostprofiles <- setdiff(clustnames, colnames(profiles))
     profiles <- cbind(profiles, oldprofiles[, lostprofiles, drop = FALSE])[, clustnames]
     
-    sds <- cbind(sds, oldsds[, lostprofiles, drop = FALSE])[, clustnames]
+    if(assay_type %in% c("RNA", "rna", "Rna")){
+      sds <- NULL
+    }
+    if(assay_type %in% c("Protein", "protein")){
+      sds <- cbind(sds, oldsds[, lostprofiles, drop = FALSE])[, clustnames]
+    }
     
     # keep fixed_profiles unchanged:
     profiles[, colnames(fixed_profiles)] <- as.vector(fixed_profiles)
-    sds[, colnames(fixed_sds)] <- as.vector(fixed_sds)
     
+    if(assay_type %in% c("RNA", "rna", "Rna")){
+      sds <- NULL
+    }
+    if(assay_type %in% c("Protein", "protein")){
+      sds[, colnames(fixed_sds)] <- as.vector(fixed_sds)
+      sds = sweep(sds, 2, colSums(sds), "/") * 1000
+    }
+
     # get cluster assignment
     clust <- colnames(probs)[apply(probs, 1, which.max)]
     if (iter == 1) {
@@ -364,7 +398,7 @@ nbclust <- function(counts,
   out <- list(clust = clust,
              probs = probs,
              profiles = sweep(profiles, 2, colSums(profiles), "/") * 1000,
-             sds = sweep(sds, 2, colSums(sds), "/") * 1000,
+             sds = sds,
              pct_changed = pct_changed,
              clusterlog = clusterlog)
   return(out)
