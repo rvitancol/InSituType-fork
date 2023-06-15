@@ -4,7 +4,7 @@
 #' @param counts Counts matrix (or dgCMatrix), cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
 #' @param bg Expected background
-#' @param assay_type Assay type of RNA or protein 
+#' @param assay_type Assay type of RNA, protein 
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
 #'   and cell type names for cells to be held constant throughout iterations.
@@ -13,10 +13,14 @@
 #'   types. Enter 0 to run purely supervised cell typing from fixed profiles.
 #'   Enter a range of integers to automatically select the optimal number of
 #'   clusters.
-#' @param reference_profiles Matrix of expression profiles of pre-defined
+#' @param reference_profiles Matrix of mean expression profiles of pre-defined
 #'   clusters, e.g. from previous scRNA-seq. These profiles will not be updated
-#'   by the EM algorithm. Colnames must all be included in the init_clust
+#'   by the EM algorithm. Columns must all be included in the init_clust
 #'   variable.
+#' @param reference_sds Matrix of standard deviation profiles of pre-defined
+#'   clusters. These SD profiles also will not be updated by the EM algorithm. 
+#'   Columns must all be included in the init_clust variable. This parameter should
+#'   be defined if assay_type is protein. Default is NULL. 
 #' @param update_reference_profiles Logical, for whether to use the data to
 #'   update the reference profiles. Default and strong recommendation is TRUE.
 #'   (However, if the reference profiles are from the same platform as the
@@ -26,7 +30,8 @@
 #'   used.
 #' @param align_genes Logical, for whether to align the counts matrix and the
 #'   fixed_profiles by gene ID.
-#' @param nb_size The size parameter to assume for the NB distribution.
+#' @param nb_size The size parameter to assume for the NB distribution. This 
+#'    parameter is only for RNA.
 #' @param init_clust Vector of initial cluster assignments. If NULL, initial
 #'   assignments will be automatically inferred.
 #' @param n_starts the number of iterations
@@ -141,12 +146,15 @@ NULL
   #### update reference profiles ----------------------------------
   fixed_profiles <- NULL
   fixed_sds <- NULL
-  if (!is.null(reference_profiles)) {
-
+  if (!is.null(reference_profiles)) { ## This is more for Supervised or Semi-Supervised case 
+    if(is.null(reference_sds) & assay_type %in% c("Protein", "protein")){
+      stop("For protein data type, the reference SD profile should be provided!")
+    }
     ## Update the profile matrix only for Semi-supervised or Unsupervised cases ##
     if (update_reference_profiles & n_clusts!=0) {
-      update_result <- updateReferenceProfiles(reference_profiles,
-                                               reference_sds,
+      
+      update_result <- updateReferenceProfiles(reference_profiles=reference_profiles,
+                                               reference_sds=reference_sds,
                                                counts = counts, 
                                                assay_type = assay_type,
                                                neg = neg,
@@ -161,9 +169,12 @@ NULL
                                                rescale = rescale, 
                                                refit = refit)
       fixed_profiles <- update_result$updated_profiles
-      fixed_sds <- update_result$updated_sds
       anchors <- update_result$anchors
-    } else {
+      
+      ## If assay_type==RNA, this updated SDs are NULL
+      fixed_sds <- update_result$updated_sds
+      
+    }else{
       fixed_profiles <- reference_profiles
       fixed_sds <- reference_sds
     }
@@ -173,7 +184,12 @@ NULL
   if (align_genes && !is.null(fixed_profiles)) {
     x <- alignGenes(counts = x, profiles = fixed_profiles)
     fixed_profiles <- fixed_profiles[colnames(x), ]
-    fixed_sds <- fixed_sds[colnames(x), ]
+    if(assay_type %in% c("Protein", "protein")){
+      fixed_sds <- fixed_sds[colnames(x), ]
+    }
+    if(assay_type %in% c("RNA", "Rna", "rna")){
+      fixed_sds <- NULL
+    }
   }
   
   
@@ -255,6 +271,12 @@ NULL
                           nb_size = nb_size,
                           assay_type=assay_type,
                           align_genes = TRUE) 
+      
+      ## Replace the cell types of anchor cells with the originally assigned anchor cells' cell types
+      if(!is.null(anchors)){
+        out$clust[!is.na(anchors)] <- anchors[names(out$clust[!is.na(anchors)])]
+      }
+      
       out$anchors <- anchors
       return(out)
       break
@@ -323,14 +345,16 @@ NULL
     # find which profile matrix does best in the benchmarking subset:
     benchmarking_logliks <- c()
     for (i in 1:n_starts) {
-        if(assay_type=="RNA"){
+        if(assay_type %in% c("RNA", "rna", "Rna")){
           templogliks <- lldist(x = profiles_from_random_starts[[i]],
                                 xsd=NULL,
                                 mat = x[benchmarking_subset, ],
                                 bg = bg[benchmarking_subset],
                                 size = nb_size,
                                 assay_type=assay_type)
-        }else{
+        }
+
+        if(assay_type %in% c("Protein", "protein")){
           templogliks <- lldist(x = profiles_from_random_starts[[i]],
                                 xsd=y,
                                 mat = x[benchmarking_subset, ],
@@ -425,6 +449,10 @@ NULL
                       nb_size = nb_size, 
                       assay_type=assay_type,
                       align_genes = TRUE) 
+  ## Replace the cell types of anchor cells with the originally assigned anchor cells' cell types
+  if(!is.null(anchors)){
+    out$clust[!is.na(anchors)] <- anchors[names(out$clust[!is.na(anchors)])]
+  }
   out$anchors <- anchors
   
   return(out)
