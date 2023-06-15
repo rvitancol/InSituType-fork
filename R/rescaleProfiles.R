@@ -2,18 +2,17 @@
 #' Update reference profiles
 #'
 #' Update reference profiles using pre-specified anchor cells, or if no anchors
-#' are specified, by first choosing anchor cells. Option to return reference 
-#' profiles rescaled for platform effect and/or to return further refitted profiles 
-#' based on the observed profiles of anchor cells.
-#' @param reference_profiles Matrix of reference profiles, genes * cell types
+#' are specified, by first choosing anchor cells
+#' @param reference_profiles Matrix of reference mean profiles, genes * cell types
+#' @param reference_sds Matrix of standard deviation profiles, genes * cell types. Only for assay_type of protein.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
+#' @param assay_type Assay type of RNA, protein 
 #' @param bg Expected background
-#' @param nb_size The size parameter to assume for the NB distribution.
-#' @param anchors named vector giving "anchor" cell types with cell_id in names, 
-#' for use in semi-supervised clustering. Vector elements will be mainly NA's 
-#' (for non-anchored cells) and cell type names for cells to be held constant 
-#' throughout iterations.
+#' @param nb_size The size parameter to assume for the NB distribution. Only for assay_type of RNA
+#' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
+#'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
+#'   and cell type names for cells to be held constant throughout iterations.
 #' @param n_anchor_cells For semi-supervised learning. Maximum number of anchor
 #'   cells to use for each cell type.
 #' @param min_anchor_cosine For semi-supervised learning. Cells must have at
@@ -22,20 +21,8 @@
 #' @param min_anchor_llr For semi-supervised learning. Cells must have
 #'   (log-likelihood ratio / totalcounts) above this threshold to be used as an
 #'   anchor
-#' @param insufficient_anchors_thresh Cell types that end up with fewer than
-#'   this many anchors will be discarded.
-#' @param refinement Logical, flag for further anchor refinement via UMAP projection (default = FALSE)
-#' @param blacklist vector of genes to be excluded for cell typing (default = NULL)
-#' @param rescale Logical, flag for platform effect correction (default = FALSE)
-#' @param refit Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)
-#' @return a list 
-#' \describe{
-#'     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
-#'     \item{blacklist}{a vector of genes excluded from the final updated reference profiles}
-#'     \item{anchors}{a named vector for final anchors used for reference profile update}
-#'     \item{rescale_res}{a list of 5 elements, `rescaled_profiles`, `platformEff_statsDF`, `anchors`, `blacklist` and `lostgenes`, for platform effect correction outputs, return when rescale = TRUE}
-#'     \item{refit_res}{a list of 2 elements, `refitted_profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
-#' }
+#' 
+#' @return updated reference profiles
 #' @export
 updateReferenceProfiles <-
   function(reference_profiles,
@@ -215,24 +202,19 @@ updateReferenceProfiles <-
 #' @param neg Vector of mean negprobe counts per cell. Can be provided
 #' @param bg Expected background
 #' @param anchors Vector of anchor assignments
-#' @param reference_profiles Matrix of expression profiles of pre-defined
-#'   clusters, e.g. from previous scRNA-seq. These profiles will not be updated
-#'   by the EM algorithm. Colnames must all be included in the init_clust
-#'   variable.
-#' @param align_genes Logical, for whether to align the counts matrix and the
-#'   reference_profiles by gene ID.
-#' @param nb_size The size parameter to assume for the NB distribution.
-#' @param max_rescaling Scaling factors will be truncated above by this value
-#'   and below by its inverse (at 1/value and value)
-#' @return \enumerate{ \item profiles: A profiles matrix with the rows rescaled
-#' according to platform effects and individual elements updated further \item
-#' scaling_factors: A vector of genes' scaling factors (what they were
-#' multiplied by when updating the reference profiles). }
+#' @param assay_type Assay type of RNA, protein 
+#' 
+#' @return \enumerate{ 
+#' \item updated_profiles: A mean profiles matrix with the rows rescaled
+#' according to platform effects and individual elements updated further 
+#' \item updated_sds: A mean profiles matrix with the rows rescaled
+#' according to platform effects and individual elements updated further}
 #' @export
 updateProfilesFromAnchors <-
   function(counts,
            neg,
            bg = NULL, 
+           assay_type,
            anchors,
            reference_profiles,
            align_genes = TRUE,

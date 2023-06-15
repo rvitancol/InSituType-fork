@@ -29,7 +29,15 @@ insitutypeML(
 e.g. from previous scRNA-seq. These profiles will not be updated by the EM algorithm.
 Colnames must all be included in the init_clust variable.}
 
-\item{nb_size}{The size parameter to assume for the NB distribution.}
+\item{reference_sds}{Matrix of standard deviation profiles of pre-defined
+clusters. These SD profiles also will not be updated by the EM algorithm. 
+Columns must all be included in the init_clust variable. This parameter is 
+only for assay_type of protein.}
+
+\item{nb_size}{The size parameter to assume for the NB distribution. This 
+parameter is only for RNA.}
+
+\item{assay_type}{Assay type of RNA, protein}
 
 \item{align_genes}{Logical, for whether to align the counts matrix and the reference_profiles by gene ID.}
 }

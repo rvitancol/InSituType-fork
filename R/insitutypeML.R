@@ -9,8 +9,15 @@
 #' @param reference_profiles Matrix of expression profiles of pre-defined clusters,
 #'  e.g. from previous scRNA-seq. These profiles will not be updated by the EM algorithm.
 #'  Colnames must all be included in the init_clust variable.
-#' @param nb_size The size parameter to assume for the NB distribution.
+#' @param reference_sds Matrix of standard deviation profiles of pre-defined
+#'   clusters. These SD profiles also will not be updated by the EM algorithm. 
+#'   Columns must all be included in the init_clust variable. This parameter is 
+#'   only for assay_type of protein.
+#' @param nb_size The size parameter to assume for the NB distribution. This 
+#'    parameter is only for RNA.
+#' @param assay_type Assay type of RNA, protein 
 #' @param align_genes Logical, for whether to align the counts matrix and the reference_profiles by gene ID.
+#' 
 #' @return A list, with the following elements:
 #' \enumerate{
 #' \item clust: a vector given cells' cluster assignments
@@ -41,7 +48,7 @@ insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference
   }
   
   # get logliks
-  if(assay_type=="RNA"){
+  if(assay_type %in% c("RNA", "rna", "Rna")){
     logliks <- parallel::mclapply(asplit(reference_profiles, 2),
                                   lldist,
                                   xsd=NULL,
@@ -52,13 +59,11 @@ insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference
                                   mc.cores = numCores())
     
     logliks <- do.call(cbind, logliks)
-
   }
   if(assay_type %in% c("Protein", "protein")){
 
     logliks <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = nb_size, assay_type=assay_type)},
                                   asplit(reference_profiles, 2), asplit(reference_sds, 2), mc.cores = numCores())
-
   }
   
   # update logliks based on frequencies within cohorts:
@@ -80,13 +85,17 @@ insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference
                     assay_type=assay_type)
   
   profiles <- profiles_info$profiles
+  
   sds <- profiles_info$sds
   
   # aligns profiles and logliks, removing lost clusters:
   logliks_from_lost_celltypes <- logliks[, !is.element(colnames(logliks), unique(clust)), drop = FALSE]
   logliks <- logliks[, is.element(colnames(logliks), clust), drop = FALSE]
   profiles <- profiles[, colnames(logliks), drop = FALSE]
-  
+
+  if(assay_type %in% c("RNA", "rna", "Rna")){
+    sds <- NULL
+  }
   out <- list(clust = clust,
              prob = prob,
              profiles = profiles,

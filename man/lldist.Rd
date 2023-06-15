@@ -7,7 +7,9 @@
 lldist(x, xsd = NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type)
 }
 \arguments{
-\item{x}{a vector of a reference cell type}
+\item{x}{a vector of a reference mean profile for the cell type}
+
+\item{xsd}{a vector of a reference standard deviation profile for the cell type}
 
 \item{mat}{a matrix of expression levels in all cells: for Protein data, we use raw data for calculating the scaling factor}
 
@@ -16,6 +18,8 @@ lldist(x, xsd = NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type)
 \item{size}{the parameters for dnbinom function (default: 10)}
 
 \item{digits}{the number of digits for rounding}
+
+\item{assay_type}{Assay type of RNA, protein}
 }
 \value{
 likelihood for profile

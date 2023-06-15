@@ -13,6 +13,8 @@ Estep(counts, clust, neg, assay_type)
 of cells (rows) belonging to clusters (columns).}
 
 \item{neg}{Vector of mean background counts}
+
+\item{assay_type}{Assay type of RNA, protein}
 }
 \value{
 A matrix of cluster profiles, genes * clusters

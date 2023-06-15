@@ -29,7 +29,12 @@ the profiles matrix based on their names.}
 \item{profiles}{Matrix of reference profiles holding mean expression of genes x cell types. 
 Input linear-scale expression, with genes in rows and cell types in columns.}
 
-\item{size}{Negative binomial size parameter to be used in likelihood calculation.}
+\item{sds}{Matrix of reference profiles holding SDs expression of genes x cell types. 
+Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein}
+
+\item{size}{Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA}
+
+\item{assay_type}{Assay type of RNA, protein}
 
 \item{min_cosine}{Cells must have at least this much cosine similarity to a fixed profile to be used as an anchor.}
 }

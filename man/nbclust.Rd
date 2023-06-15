@@ -25,20 +25,31 @@ nbclust(
 \arguments{
 \item{counts}{Counts matrix, cells * genes.}
 
-\item{neg}{Vector of mean negprobe counts per cell}
+\item{neg}{Vector of mean negative probe counts per cell.}
+
+\item{assay_type}{Assay type of RNA, protein}
 
 \item{bg}{Expected background}
 
-\item{fixed_profiles}{Matrix of cluster profiles to hold unchanged throughout iterations.}
+\item{fixed_profiles}{Matrix of mean expression profiles to hold unchanged throughout iterations. genes * cell types}
 
-\item{init_profiles}{Matrix of cluster profiles under which to begin iterations.
+\item{fixed_sds}{Matrix of standard deviation profiles of pre-defined
+clusters to hold unchanged throughout iterations. 
+Columns must all be included in the init_clust variable. This parameter is 
+only for assay_type of protein.}
+
+\item{init_profiles}{Matrix of cluster mean profiles under which to begin iterations.
 If NULL, initial assignments will be automatically inferred, using init_clust 
 if available, and using random clusters if not.}
+
+\item{init_sds}{Matrix of cluster SDs profiles under which to begin iterations.
+If NULL, initial assignments will be automatically inferred, using init_clust 
+if available, and using random clusters if not. Only for assay_type of protein}
 
 \item{init_clust}{Vector of initial cluster assignments.
 If NULL, initial assignments will be automatically inferred.}
 
-\item{nb_size}{The size parameter to assume for the NB distribution.}
+\item{nb_size}{The size parameter to assume for the NB distribution. Only for assay_type of RNA.}
 
 \item{cohort}{Vector of cells' "cohort" assignments, uses to assess frequencies in each cluster.}
 

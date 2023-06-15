@@ -44,6 +44,8 @@ above this threshold to be used as an anchor}
 
 \item{insufficient_anchors_thresh}{Cell types that end up with fewer than
 this many anchors will be discarded.}
+
+\item{assay_type}{Assay type of RNA, protein}
 }
 \value{
 A vector holding anchor cell assignments (or NA) for each cell in the

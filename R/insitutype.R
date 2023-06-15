@@ -191,7 +191,7 @@ NULL
       fixed_sds <- NULL
     }
   }
-  
+
   
   #### set up subsetting: ---------------------------------
   # get data for subsetting if not already provided
@@ -233,7 +233,7 @@ NULL
   if (length(n_clusts) > 1) {
     
     message("Selecting optimal number of clusters from a range of ", min(n_clusts), " - ", max(n_clusts))
-    
+
     chooseclusternumber_subset <- geoSketch_sample_from_plaids(Plaid = plaid, 
                                                                N = min(n_chooseclusternumber, nrow(counts)),
                                                                seed = NULL)
@@ -320,6 +320,9 @@ NULL
         tempinit <- rep(cluster_name_pool[seq_len(n_clusts)], each = ceiling(length(random_start_subsets[[i]]) / n_clusts))[
           seq_along(random_start_subsets[[i]])]
       }
+
+      endTime <- Sys.time()
+      print(endTime - startTime)
       
       tempNBclust <- nbclust(
         counts = x[random_start_subsets[[i]], ], 
@@ -372,9 +375,23 @@ NULL
       tempsds <- NULL
     }
     
-    if(assay_type %in% c("Protein", "protein")){
-      tempsds <- sds_from_random_starts[[best_start]]
-    }
+    # run nbclust, initialized with the cell type assignments derived from the previous phase's profiles
+    clust2 <- nbclust(counts = counts[phase2_sample, ], 
+                      neg = neg[phase2_sample], 
+                      bg = bg[phase2_sample],
+                      fixed_profiles = fixed_profiles,
+                      fixed_sds = fixed_sds,
+                      cohort = cohort[phase2_sample],
+                      init_profiles = tempprofiles, 
+                      init_sds = tempsds, 
+                      init_clust = temp_init_clust, 
+                      nb_size = nb_size,
+                      assay_type=assay_type,
+                      pct_drop = 1/1000,
+                      min_prob_increase = min_prob_increase,
+                      max_iters = max_iters)
+    tempprofiles <- clust2$profiles
+    tempsds <- clust2$sds
     
     rm(profiles_from_random_starts)
     rm(sds_from_random_starts)

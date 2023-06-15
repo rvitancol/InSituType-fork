@@ -2,6 +2,7 @@
 #'
 #' Take a user-defined list of cells types to rename/combine, then re-compute
 #' cluster assignments and probabilities under the merged cell types.
+#' @param assay_type Assay type of RNA, protein 
 #' @param merges A named vector in which the elements give new cluster names and
 #'   the names give old cluster names. OK to omit cell types that aren't being
 #'   merged.
@@ -37,7 +38,7 @@
 #' to_delete = c("neutrophils")
 #' # example subcluster argument:
 #' subcluster = list("Myofibroblast" = 2:3)
-refineClusters <- function(merges = NULL, to_delete = NULL, subcluster = NULL, logliks,
+refineClusters <- function(assay_type="RNA", merges = NULL, to_delete = NULL, subcluster = NULL, logliks,
                        counts = NULL, neg = NULL, bg = NULL, cohort = NULL) {
   
   # check that provided cell names are all in logliks:
@@ -105,6 +106,7 @@ refineClusters <- function(merges = NULL, to_delete = NULL, subcluster = NULL, l
     use <- which(colnames(newlogliks)[apply(newlogliks, 1, which.max)] == name)
     # run insitutype on just the named cell type:
     temp <- insitutype(counts = counts[use, ],
+                       assay_type = assay_type,
                        neg = neg[use],
                        bg = bg[use],
                        cohort = cohort[use],
@@ -146,7 +148,8 @@ refineClusters <- function(merges = NULL, to_delete = NULL, subcluster = NULL, l
   if (!is.null(counts) && !is.null(neg)) {
     profiles_info <- Estep(counts = counts,
                            clust = clust,
-                           neg = neg)
+                           neg = neg,
+                           assay_type=assay_type)
     profiles <- profiles_info$profiles
     sds <- profiles_info$sds
     

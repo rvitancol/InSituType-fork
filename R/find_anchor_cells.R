@@ -11,10 +11,15 @@
 #'  the profiles matrix based on their names. 
 #' @param profiles Matrix of reference profiles holding mean expression of genes x cell types. 
 #'  Input linear-scale expression, with genes in rows and cell types in columns.
-#' @param size Negative binomial size parameter to be used in likelihood calculation.
+#' @param sds Matrix of reference profiles holding SDs expression of genes x cell types. 
+#'  Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein
+#' @param size Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA
+#' @param assay_type Assay type of RNA, protein 
 #' @param min_cosine Cells must have at least this much cosine similarity to a fixed profile to be used as an anchor.
+#' 
 #' @return A list with two elements: cos, the matrix of cosine distances;
 #'  and llr, the matrix of log likelihood ratios of each cell under each cell type vs. the 2nd best cell type.
+#' 
 #' @importFrom lsa cosine
 #' @export
 get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
@@ -97,6 +102,8 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #'   above this threshold to be used as an anchor
 #' @param insufficient_anchors_thresh Cell types that end up with fewer than
 #'   this many anchors will be discarded.
+#' @param assay_type Assay type of RNA, protein 
+#' 
 #' @return A vector holding anchor cell assignments (or NA) for each cell in the
 #'   counts matrix
 #' @export
@@ -199,8 +206,10 @@ choose_anchors_from_stats <-
 #' @param profiles Matrix of reference profiles holding mean expression of genes
 #'   x cell types. Input linear-scale expression, with genes in rows and cell
 #'   types in columns.
-#' @param size Negative binomial size parameter to be used in loglikelihood
-#'   calculatoin
+#' @param sds Matrix of reference profiles holding SDs expression of genes x cell types. 
+#'  Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein
+#' @param size Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA
+#' @param assay_type Assay type of RNA, protein 
 #' @param n_cells Up to this many cells will be taken as anchor points
 #' @param min_cosine Cells must have at least this much cosine similarity to a
 #'   fixed profile to be used as an anchor

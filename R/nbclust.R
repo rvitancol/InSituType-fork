@@ -17,11 +17,13 @@ numCores <- function() {
 
 #' Calculate the likelihood of the vector x using the reference vector of y
 #'
-#' @param x a vector of a reference cell type
+#' @param x a vector of a reference mean profile for the cell type
+#' @param xsd a vector of a reference standard deviation profile for the cell type
 #' @param mat a matrix of expression levels in all cells: for Protein data, we use raw data for calculating the scaling factor 
 #' @param bg background level (default: 0.01)
 #' @param size the parameters for dnbinom function (default: 10)
 #' @param digits the number of digits for rounding
+#' @param assay_type Assay type of RNA, protein 
 #'
 #' @importFrom Matrix rowSums
 #' @importFrom stats dnbinom
@@ -54,10 +56,7 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
   # calc scaling factor to put y on the scale of x:
   if (is.vector(bg)) {
     bgsub <- mat
-    
-    # if(assay_type =="RNA"){
-      bgsub@x <- bgsub@x - bg[bgsub@i + 1]
-    # }
+    bgsub@x <- bgsub@x - bg[bgsub@i + 1]
     bgsub@x <- pmax(bgsub@x, 0)
     
   } else {
@@ -71,18 +70,22 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
   s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum_of_x
   
   if (is.vector(bg)) {
-    if(assay_type=="RNA"){
+    if(assay_type %in% c("RNA", "rna", "Rna")){
       res <- lls_rna(mat, s, x, bg, size)
-    }else{
+    }
+    
+    if(assay_type %in% c("Protein", "protein")){
       res <- lls_protein(mat=mat, s=s, x=x, xsd=xsd, bg=bg)
     }
+    
   }else{
     # non-optimized code used if bg is cell x gene matrix
-    if(assay_type =="RNA"){
+    if(assay_type %in% c("RNA", "rna", "Rna")){
       yhat <- s %*% t(x) + bg
       res <- stats::dnbinom(x = as.matrix(mat), size = size, mu = yhat, log = TRUE)
-      
-    }else{
+    }
+    
+    if(assay_type %in% c("Protein", "protein")){
       yhat <- s %*% t(x)
       ysd <- s %*% t(xsd)
       ## Estimate SD for each Cell type and each Protein. 
@@ -104,17 +107,21 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
 #' @param counts Counts matrix, cells * genes.
 #' @param means Matrix of mean cluster profiles,
 #'  with genes in rows and clusters in columns.
+#' @param sds Matrix of standard deviation cluster profiles,
+#'  with genes in rows and clusters in columns.
 #' @param cohort a vector of cells' "cohort" assignment, used to update logliks 
 #'  based on cluster frequencies within a cohort.
 #' @param bg Expected background
 #' @param size NB size parameter
 #' @param digits Round the output to this many digits (saves memory)
 #' @param return_loglik If TRUE, logliks will be returned. If FALSE, probabilities will be returned. 
+#' @param assay_type Assay type of RNA, protein 
+#' 
 #' @return Matrix of probabilities of each cell belonging to each cluster
 #' @export
-Mstep <- function(counts, means, sds, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE, assay_type) {
+Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE, assay_type) {
   # get logliks of cells * clusters
-  if(assay_type=="RNA"){
+  if(assay_type %in% c("RNA", "rna", "Rna")){
     logliks <- parallel::mclapply(asplit(means, 2),
                                   lldist,
                                   xsd=NULL,
@@ -124,10 +131,11 @@ Mstep <- function(counts, means, sds, cohort, bg = 0.01, size = 10, digits = 2, 
                                   assay_type=assay_type,
                                   mc.cores = numCores())
     logliks <- do.call(cbind, logliks)
-  }else{
+  }
+  
+  if(assay_type %in% c("Protein", "protein")){
     logliks <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = size, assay_type=assay_type)},
                                   asplit(means, 2), asplit(sds, 2), mc.cores = numCores())
-    
   }
   
   
@@ -158,6 +166,7 @@ Mstep <- function(counts, means, sds, cohort, bg = 0.01, size = 10, digits = 2, 
 #' @param clust Vector of cluster assignments, or a matrix of probabilities
 #'   of cells (rows) belonging to clusters (columns).
 #' @param neg Vector of mean background counts
+#' @param assay_type Assay type of RNA, protein 
 #'
 #' @importFrom Matrix rowSums
 #'
@@ -168,43 +177,52 @@ Estep <- function(counts, clust, neg, assay_type) {
   # get cluster means:
   means <- sapply(unique(clust), function(cl) {
     
-    if(assay_type =="RNA"){
+    if(assay_type %in% c("RNA", "rna", "Rna")){
       means = pmax(Matrix::colMeans(counts[clust == cl, , drop = FALSE]) - mean(neg[clust == cl]), 0)
-    }else{
-      means = Matrix::colMeans(counts[clust == cl, , drop = FALSE])  #- mean(neg[clust == cl])
     }
     
+    if(assay_type %in% c("Protein", "protein")){
+      means = Matrix::colMeans(counts[clust == cl, , drop = FALSE])  #- mean(neg[clust == cl])
+    }
+    return(means)
   })
   sds <- sapply(unique(clust), function(cl) {
     
-    if(assay_type =="RNA"){
-      sds = NULL
-    }else{
-      sds = apply(counts[clust == cl, , drop = FALSE], 2, sd)  #- sd(neg[clust == cl])
+    if(assay_type %in% c("RNA", "rna", "Rna")){
+      sds = matrix(rep(NA, ncol(counts)), nrow=ncol(counts))
     }
     
+    if(assay_type %in% c("Protein", "protein")){
+      sds = apply(counts[clust == cl, , drop = FALSE], 2, sd)  #- sd(neg[clust == cl])
+    }
+    return(sds)
   })
   
   return(list(profiles=means, sds=sds))
 }
 
 
-
-
-
 #' Cluster via EM algorithm based on cell logliks
 #'
 #' Cluster single cell gene expression data using an EM algorithm.
 #' @param counts Counts matrix, cells * genes.
-#' @param neg Vector of mean negprobe counts per cell
+#' @param neg Vector of mean negative probe counts per cell. 
+#' @param assay_type Assay type of RNA, protein 
 #' @param bg Expected background
-#' @param fixed_profiles Matrix of cluster profiles to hold unchanged throughout iterations.
-#' @param init_profiles Matrix of cluster profiles under which to begin iterations.
+#' @param fixed_profiles Matrix of mean expression profiles to hold unchanged throughout iterations. genes * cell types
+#' @param fixed_sds Matrix of standard deviation profiles of pre-defined
+#'   clusters to hold unchanged throughout iterations. 
+#'   Columns must all be included in the init_clust variable. This parameter is 
+#'   only for assay_type of protein.
+#' @param init_profiles Matrix of cluster mean profiles under which to begin iterations.
 #' If NULL, initial assignments will be automatically inferred, using init_clust 
 #' if available, and using random clusters if not. 
+#' @param init_sds Matrix of cluster SDs profiles under which to begin iterations.
+#' If NULL, initial assignments will be automatically inferred, using init_clust 
+#' if available, and using random clusters if not. Only for assay_type of protein
 #' @param init_clust Vector of initial cluster assignments.
 #' If NULL, initial assignments will be automatically inferred.
-#' @param nb_size The size parameter to assume for the NB distribution.
+#' @param nb_size The size parameter to assume for the NB distribution. Only for assay_type of RNA.
 #' @param cohort Vector of cells' "cohort" assignments, uses to assess frequencies in each cluster. 
 #' @param pct_drop the decrease in percentage of cell types with a valid switchover to 
 #'  another cell type compared to the last iteration. Default value: 1/10000. A valid 
@@ -273,10 +291,6 @@ nbclust <- function(counts,
     profiles <- init_profiles
     sds <- init_sds
   } 
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
   # if no init_profiles for RNA & protein, derive them:
   if (is.null(init_profiles)) {
     clust_old <- init_clust
@@ -286,10 +300,14 @@ nbclust <- function(counts,
                       clust = init_clust[!is.na(clust_old)],
                       neg = bg[!is.na(clust_old)],
                       assay_type=assay_type)
-    profiles <- profiles_info$profiles
-    sds <- profiles_info$sds
+    ## if no init_profiles is provided, use the derived profiles
+    ## otherwise, use the init_profiles
+    if(is.null(init_profiles)){
+      profiles <- profiles_info$profiles
+    }else{
+      profiles <- init_profiles
+    }
     
-
     ## if no init_sds is provided, use the derived SD profiles
     ## otherwise, use the init_sds
     if(assay_type %in% c("Protein", "protein")){
@@ -303,17 +321,16 @@ nbclust <- function(counts,
       sds <- NULL
     }
   }
+  
   # keep fixed_profiles unchanged:
   if (length(profiles) == 0) {
     profiles <- NULL
   }
   profiles <- cbind(profiles[, setdiff(colnames(profiles), colnames(fixed_profiles)), drop = FALSE], fixed_profiles)
-
   
   if(assay_type %in% c("Protein", "protein")){
     sds <- cbind(sds[, setdiff(colnames(sds), colnames(fixed_sds)), drop = FALSE], fixed_sds)
   }
-
   clustnames <- colnames(profiles)
 
   #### run EM algorithm iterations: ----------------------------------
@@ -371,7 +388,7 @@ nbclust <- function(counts,
       sds[, colnames(fixed_sds)] <- as.vector(fixed_sds)
       sds = sweep(sds, 2, colSums(sds), "/") * 1000
     }
-
+    
     # get cluster assignment
     clust <- colnames(probs)[apply(probs, 1, which.max)]
     if (iter == 1) {

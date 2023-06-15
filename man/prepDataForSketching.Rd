@@ -8,6 +8,8 @@ prepDataForSketching(counts, assay_type)
 }
 \arguments{
 \item{counts}{Counts matrix: cells x genes}
+
+\item{assay_type}{Assay type of RNA, protein}
 }
 \value{
 A matrix of data for geoSketch, with cells in rows and features in columns
