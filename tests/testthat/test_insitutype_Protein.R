@@ -1,37 +1,39 @@
 # load data ("raw" and "cellannot"):
-data("ioprofiles")
-data("iocolors")
-data("mini_nsclc")
+data("tonsil_protein")
+data("tonsil_reference_profile")
+data("tonsil_annotation")
 
 set.seed(0)
 
 # test nbclust semi-sup
-sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
-nbres <- nbclust(counts = mini_nsclc$counts[, sharedgenes],
-                 neg =  Matrix::rowMeans(mini_nsclc$neg), 
+sharedgenes <- intersect(colnames(tonsil_protein$counts), rownames(tonsil_reference_profile$mean.ref.profile))
+nbres <- nbclust(counts = tonsil_protein$counts[, sharedgenes],
+                 neg =  Matrix::rowMeans(tonsil_protein$neg), 
                  bg = NULL,
-                 assay_type = "rna",
-                 fixed_profiles = ioprofiles[sharedgenes, 1:3],
+                 assay_type = "Protein",
+                 fixed_profiles = tonsil_reference_profile$mean.ref.profile[sharedgenes, 1:3],
+                 fixed_sds = tonsil_reference_profile$SDs.ref.profile[sharedgenes, 1:3],
                  init_profiles = NULL, 
-                 init_clust = rep(c("a", "b"), nrow(mini_nsclc$counts) / 2),
+                 init_clust = rep(c("a", "b"), nrow(tonsil_protein$counts) / 2),
                  nb_size = 10,
-                 cohort = rep("a", nrow(mini_nsclc$counts)),
+                 cohort = rep("a", nrow(tonsil_protein$counts)),
                  pct_drop = 1/10000,
                  min_prob_increase = 0.05, 
                  max_iters = 3, 
                  logresults = FALSE)
 testthat::test_that("semi-sup nbclust preserves fixedprofiles", {
-  expect_true(all(abs(diag(cor(nbres$profiles[, colnames(ioprofiles)[1:3]], ioprofiles[sharedgenes, ]))) == 1))
+  expect_true(all(abs(diag(cor(nbres$profiles[, colnames(tonsil_reference_profile$mean.ref.profile)[1:3]], tonsil_reference_profile$mean.ref.profile[sharedgenes, ]))) == 1))
 })
 
 
 # test supervised cell typing using direct loglik calcs:
-sup <- insitutypeML(counts = mini_nsclc$counts,
-                    neg = Matrix::rowMeans(mini_nsclc$neg),
+sup <- insitutypeML(counts = tonsil_protein$counts,
+                    neg = Matrix::rowMeans(tonsil_protein$neg),
                     bg = NULL,
-                    assay_type = "rna",
-                    cohort = rep(c("a", "b"), each = nrow(mini_nsclc$counts) / 2),
-                    reference_profiles = ioprofiles[, 1:6],
+                    assay_type = "Protein",
+                    cohort = rep(c("a", "b"), each = nrow(tonsil_protein$counts) / 2),
+                    reference_profiles = tonsil_reference_profile$mean.ref.profile[, 1:6],
+                    reference_sds = tonsil_reference_profile$SDs.ref.profile[, 1:6],
                     nb_size = 10,
                     align_genes = TRUE)
   
@@ -44,14 +46,15 @@ testthat::test_that("supervised cell typing produces correct outputs", {
 })
 
 # test semi-supervised with 0 new clusts:
-semi <- insitutype(counts = mini_nsclc$counts,
-                  neg = Matrix::rowMeans(mini_nsclc$neg),
+semi <- insitutype(counts = tonsil_protein$counts,
+                  neg = Matrix::rowMeans(tonsil_protein$neg),
                   bg = NULL,
-                  assay_type = "rna",
+                  assay_type = "Protein",
                   init_clust = NULL,
                   n_clusts = 0,
                   anchors = NULL,
-                  reference_profiles = ioprofiles[, 1:6],
+                  reference_profiles = tonsil_reference_profile$mean.ref.profile[, 1:6],
+                  reference_sds = tonsil_reference_profile$SDs.ref.profile[, 1:6],
                   nb_size = 10,
                   n_starts = 2,
                   align_genes = TRUE,
@@ -77,16 +80,16 @@ testthat::test_that("semiservised cell typing with n_clusts = 0 produces correct
 
 
 # run unsupervised clustering with several random starts:
-unsup <- insitutype(counts = mini_nsclc$counts,
-                    neg = Matrix::rowMeans(mini_nsclc$neg),
+unsup <- insitutype(counts = tonsil_protein$counts,
+                    neg = Matrix::rowMeans(tonsil_protein$neg),
                     bg = NULL,
-                    assay_type = "rna",
+                    assay_type = "Protein",
                     init_clust = NULL, 
                     n_clusts = 2:5,
                     reference_profiles = NULL,
                     reference_sds = NULL,
                     anchors = NULL,
-                    cohort = rep(c("a", "b"), each = nrow(mini_nsclc$counts) / 2),
+                    cohort = rep(c("a", "b"), each = nrow(tonsil_protein$counts) / 2),
                     nb_size = 10,
                     n_starts = 2,
                     align_genes = TRUE,
@@ -112,11 +115,11 @@ testthat::test_that("unsupervised cell typing produces correct outputs", {
 
 
 # run unsupervised clustering with init_clust specified:
-init_clust <- rep(c("name1", "xxx", "ooo"), each = nrow(mini_nsclc$counts) / 3)[seq_len(nrow(mini_nsclc$counts))]
-unsup <- insitutype(counts = mini_nsclc$counts,
-                    neg = Matrix::rowMeans(mini_nsclc$neg),
+init_clust <- rep(c("name1", "xxx", "ooo"), each = nrow(tonsil_protein$counts) / 3)[seq_len(nrow(tonsil_protein$counts))]
+unsup <- insitutype(counts = tonsil_protein$counts,
+                    neg = Matrix::rowMeans(tonsil_protein$neg),
                     bg = 0.03,
-                    assay_type = "rna",
+                    assay_type = "Protein",
                     init_clust = init_clust, 
                     n_clusts = 6,
                     reference_profiles = NULL,
@@ -144,13 +147,14 @@ testthat::test_that("unsupervised cell typing using init_clust produces correct 
 
 
 # semi-supervised using the immune oncology cell profiles (in ptolemy package data):
-semi <- insitutype(counts = mini_nsclc$counts,
-                   neg = Matrix::rowMeans(mini_nsclc$neg),
+semi <- insitutype(counts = tonsil_protein$counts,
+                   neg = Matrix::rowMeans(tonsil_protein$neg),
                    bg = NULL,
                    anchors = NULL,
-                   assay_type = "rna",
+                   assay_type = "Protein",
                    init_clust = NULL, n_clusts = 2,
-                   reference_profiles = ioprofiles[, 1:3],
+                   reference_profiles = tonsil_reference_profile$mean.ref.profile[, 1:3],
+                   reference_sds = tonsil_reference_profile$SDs.ref.profile[, 1:3],
                    nb_size = 10,
                    n_starts = 2,
                    align_genes = TRUE,
@@ -177,31 +181,17 @@ testthat::test_that("semi-supervised cell typing using init_clust produces corre
 })
 
 
-# test merge cells with multi-sample clustering:
-merge2 <- refineClusters(
-  merges =  c("B-cell" = "lymphoid", "a" = "cancer", "b" = "cancer"), 
-  to_delete = c("endothelial"), 
-  subcluster = list("fibroblast" = 2),
-  logliks = semi$logliks, 
-  counts = mini_nsclc$counts,
-  neg = Matrix::rowMeans(mini_nsclc$neg),
-  bg = NULL, 
-  cohort = NULL)
-testthat::test_that("refineClusters works when merges and deletions are asked for", {
-  expect_true(all(is.element(colnames(merge2$logliks), c("lymphoid", "cancer", "fibroblast_1", "fibroblast_2"))))
-  expect_equal(names(merge2$clust), names(semi$clust))
-})
-
 
 
 # test chooseclusternumber:
-res <- chooseClusterNumber(counts = mini_nsclc$counts,
-                           neg = Matrix::rowMeans(mini_nsclc$neg),
+res <- chooseClusterNumber(counts = tonsil_protein$counts,
+                           neg = Matrix::rowMeans(tonsil_protein$neg),
                            bg = NULL,
                            anchors = NULL,
-                           assay_type = "rna",
+                           assay_type = "Protein",
                            init_clust = NULL, n_clusts = 2:3,
-                           fixed_profiles = ioprofiles[, 1:3],
+                           fixed_profiles = tonsil_reference_profile$mean.ref.profile[, 1:3],
+                           fixed_sds = tonsil_reference_profile$SDs.ref.profile[, 1:3],
                            max_iters = 4, 
                            subset_size = 1000, 
                            align_genes = TRUE, 
@@ -220,26 +210,26 @@ testthat::test_that("chooseClusterNumber produces correct outputs", {
 })
 
 # test anchor stats function:
-astats <- get_anchor_stats(counts = mini_nsclc$counts,
-                           neg = Matrix::rowMeans(mini_nsclc$neg),
+astats <- get_anchor_stats(counts = tonsil_protein$counts,
+                           neg = Matrix::rowMeans(tonsil_protein$neg),
                            bg = NULL, 
-                           sds=NULL,
-                           assay_type = "rna",
+                           assay_type = "Protein",
                            align_genes = TRUE,
-                           profiles = ioprofiles[, 1:3], 
+                           profiles = tonsil_reference_profile$mean.ref.profile[, 1:3], 
+                           sds = tonsil_reference_profile$SDs.ref.profile[, 1:3],
                            size = 10, 
                            min_cosine = 0.3) 
 
 testthat::test_that("get_anchor_stats produces correct outputs", {
-  expect_true(all(dim(astats$cos) == c(nrow(mini_nsclc$counts), 3)))
-  expect_true(all(dim(astats$llr) == c(nrow(mini_nsclc$counts), 3)))
+  expect_true(all(dim(astats$cos) == c(nrow(tonsil_protein$counts), 3)))
+  expect_true(all(dim(astats$llr) == c(nrow(tonsil_protein$counts), 3)))
 })
 
 # test anchor selection from stats:
-anchors <- choose_anchors_from_stats(counts = mini_nsclc$counts,
-                                     neg = Matrix::rowMeans(mini_nsclc$neg),
+anchors <- choose_anchors_from_stats(counts = tonsil_protein$counts,
+                                     neg = Matrix::rowMeans(tonsil_protein$neg),
                                      bg = NULL,
-                                     assay_type = "rna",
+                                     assay_type = "Protein",
                                      anchorstats = astats, 
                                      cos = NULL, 
                                      llr = NULL, 
@@ -251,17 +241,17 @@ anchors <- choose_anchors_from_stats(counts = mini_nsclc$counts,
 testthat::test_that("choose_anchors_from_stats produces correct outputs", {
   expect_true(all(is.element(anchors, c(NA, colnames(astats[[2]])))))
   expect_true(max(table(anchors)) <= 500)
-  expect_equal(names(anchors), rownames(mini_nsclc$counts))
+  expect_equal(names(anchors), rownames(tonsil_protein$counts))
 })
 
 # test global anchor selection:
-anchors <- find_anchor_cells(counts = mini_nsclc$counts,
-                             neg = Matrix::rowMeans(mini_nsclc$neg),
+anchors <- find_anchor_cells(counts = tonsil_protein$counts,
+                             neg = Matrix::rowMeans(tonsil_protein$neg),
                              bg = NULL, 
                              align_genes = TRUE,
-                             assay_type = "rna",
-                             profiles = ioprofiles[, 1:3], 
-                             sds=NULL,
+                             assay_type = "Protein",
+                             profiles = tonsil_reference_profile$mean.ref.profile[, 1:3], 
+                             sds = tonsil_reference_profile$SDs.ref.profile[, 1:3],
                              size = 10, 
                              n_cells = 500, 
                              min_cosine = 0.3, 
@@ -271,52 +261,35 @@ anchors <- find_anchor_cells(counts = mini_nsclc$counts,
 testthat::test_that("find_anchor_cells produces correct outputs", {
   expect_true(all(is.element(anchors, c(NA, colnames(astats[[2]])))))
   expect_true(max(table(anchors)) <= 500)
-  expect_equal(names(anchors), rownames(mini_nsclc$counts))
+  expect_equal(names(anchors), rownames(tonsil_protein$counts))
 })
 
 # test anchor selection runs without error and returns NULL if no cells meet criteria:
-anchors <- suppressWarnings(find_anchor_cells(counts = mini_nsclc$counts,
-                             neg = Matrix::rowMeans(mini_nsclc$neg),
+anchors <- suppressWarnings(find_anchor_cells(counts = tonsil_protein$counts,
+                             neg = Matrix::rowMeans(tonsil_protein$neg),
                              bg = NULL, 
                              align_genes = TRUE,
-                             assay_type = "rna",
-                             profiles = ioprofiles[, 1:3], 
-                             sds=NULL,
+                             assay_type = "Protein",
+                             profiles = tonsil_reference_profile$mean.ref.profile[, 1:3], 
+                             sds = tonsil_reference_profile$SDs.ref.profile[, 1:3],
                              size = 10, 
                              n_cells = 500, 
-                             min_cosine = 0.8, 
-                             min_scaled_llr = 0.01, 
+                             min_cosine = 0.99, 
+                             min_scaled_llr = 0.1, 
                              insufficient_anchors_thresh = 2))
 testthat::test_that("find_anchor_cells produces correct outputs when none selected", {
   expect_null(anchors)
 })
 
 
-# test refineClusters:
-merge1 <- refineClusters(
-  merges = NULL, to_delete = NULL, subcluster = NULL, logliks = sup$logliks)
-merge2 <- refineClusters(
-  merges =  c("macrophage" = "myeloid", "mDC" = "myeloid", "B-cell" = "lymphoid"), 
-  to_delete = "endothelial", 
-  subcluster = list("fibroblast" = 2),
-  logliks = sup$logliks,
-  counts = mini_nsclc$counts,
-  neg = Matrix::rowMeans(mini_nsclc$neg))
-testthat::test_that("refineClusters works when no directions are passed to it", {
-  expect_equal(sup$logliks, merge1$logliks, tolerance = 1e-2)
-  expect_equal(sup$clust, merge1$clust)
-})
-testthat::test_that("refineClusters works when merges and deletions are asked for", {
-  expect_true(all(is.element(colnames(merge2$logliks), c("lymphoid", "myeloid", "fibroblast_1", "fibroblast_2", "mast"))))
-})
 
 
 # test updateReferenceProfiles:
-rescaled <- updateReferenceProfiles(reference_profiles = ioprofiles, 
-                                    reference_sds = NULL,
-                                    assay_type = "rna",
-                                   counts = mini_nsclc$counts,
-                                   neg = Matrix::rowMeans(mini_nsclc$neg))
+rescaled <- updateReferenceProfiles(reference_profiles = tonsil_reference_profile$mean.ref.profile, 
+                                    reference_sds = tonsil_reference_profile$SDs.ref.profile,
+                                    assay_type = "Protein",
+                                   counts = tonsil_protein$counts,
+                                   neg = tonsil_protein$neg)
 testthat::test_that("rescaleProfiles works as intended", {
   expect_true(is.matrix(rescaled$updated_profiles))
   expect_true(is.vector(rescaled$anchors))
@@ -330,3 +303,39 @@ testthat::test_that("fastCohorting works as intended", {
   expect_true(is.vector(cres))
   expect_true(length(unique(cres)) == 10)
 })
+
+# test refineClusters:
+merge1 <- refineClusters(
+  merges = NULL, to_delete = NULL, subcluster = NULL, logliks = sup$logliks)
+merge2 <- refineClusters(
+  merges =  c("macrophage" = "myeloid", "mDC" = "myeloid", "B-cell" = "lymphoid"), 
+  to_delete = "endothelial", 
+  subcluster = list("fibroblast" = 2),
+  logliks = sup$logliks,
+  counts = tonsil_protein$counts,
+  neg = Matrix::rowMeans(tonsil_protein$neg))
+testthat::test_that("refineClusters works when no directions are passed to it", {
+  expect_equal(sup$logliks, merge1$logliks, tolerance = 1e-2)
+  expect_equal(sup$clust, merge1$clust)
+})
+testthat::test_that("refineClusters works when merges and deletions are asked for", {
+  expect_true(all(is.element(colnames(merge2$logliks), c("lymphoid", "myeloid", "fibroblast_1", "fibroblast_2", "mast"))))
+})
+
+
+
+# test merge cells with multi-sample clustering:
+merge2 <- refineClusters(
+  merges =  c("cd8 t cell" = "t cell", "cd4 t cell" = "t cell"), 
+  to_delete = c("a"), 
+  subcluster = list("b" = 2),
+  logliks = semi$logliks, 
+  counts = tonsil_protein$counts,
+  neg = Matrix::rowMeans(tonsil_protein$neg),
+  bg = NULL, 
+  cohort = NULL)
+testthat::test_that("refineClusters works when merges and deletions are asked for", {
+  expect_true(all(is.element(colnames(merge2$logliks), c("lymphoid", "cancer", "fibroblast_1", "fibroblast_2"))))
+  expect_equal(names(merge2$clust), names(semi$clust))
+})
+
