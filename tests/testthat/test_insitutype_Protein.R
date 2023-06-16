@@ -305,12 +305,12 @@ testthat::test_that("fastCohorting works as intended", {
 })
 
 # test refineClusters:
-merge1 <- refineClusters(
+merge1 <- refineClusters(assay_type = "protein",
   merges = NULL, to_delete = NULL, subcluster = NULL, logliks = sup$logliks)
-merge2 <- refineClusters(
-  merges =  c("macrophage" = "myeloid", "mDC" = "myeloid", "B-cell" = "lymphoid"), 
-  to_delete = "endothelial", 
-  subcluster = list("fibroblast" = 2),
+merge2 <- refineClusters(assay_type = "protein",
+  merges =  c("gc b cell" = "immune", "cd4 t cell" = "immune"), 
+  to_delete = "epithelial", 
+  subcluster = list("cd8 t cell" = 2),
   logliks = sup$logliks,
   counts = tonsil_protein$counts,
   neg = Matrix::rowMeans(tonsil_protein$neg))
@@ -319,13 +319,13 @@ testthat::test_that("refineClusters works when no directions are passed to it", 
   expect_equal(sup$clust, merge1$clust)
 })
 testthat::test_that("refineClusters works when merges and deletions are asked for", {
-  expect_true(all(is.element(colnames(merge2$logliks), c("lymphoid", "myeloid", "fibroblast_1", "fibroblast_2", "mast"))))
+  expect_true(all(is.element(colnames(merge2$logliks), c("immune", "cd8 t cell_1", "cd8 t cell_2", "dendritic", "fibroblast"))))
 })
 
 
 
 # test merge cells with multi-sample clustering:
-merge2 <- refineClusters(
+merge2 <- refineClusters(assay_type = "protein",
   merges =  c("cd8 t cell" = "t cell", "cd4 t cell" = "t cell"), 
   to_delete = c("a"), 
   subcluster = list("b" = 2),
@@ -335,7 +335,7 @@ merge2 <- refineClusters(
   bg = NULL, 
   cohort = NULL)
 testthat::test_that("refineClusters works when merges and deletions are asked for", {
-  expect_true(all(is.element(colnames(merge2$logliks), c("lymphoid", "cancer", "fibroblast_1", "fibroblast_2"))))
+  expect_true(all(is.element(colnames(merge2$logliks), c("b_1", "b_2", "dendritic", "t cell"))))
   expect_equal(names(merge2$clust), names(semi$clust))
 })
 
