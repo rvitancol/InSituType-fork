@@ -114,7 +114,8 @@ updateProfilesFromAnchors <-
 
 
 
-#' Rescale_Reference is the function for reference profile re-scaling
+
+#' updateReferenceProfiles is the function for reference profile re-scaling
 #' Inputs@@
 #' @param ioprofiles_Raw = raw reference profile
 #' @param counts_input= cosmx counts data with genes on column and cells on row
