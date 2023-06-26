@@ -73,44 +73,45 @@ updateReferenceProfiles <-
 }
 
 
-
-#' Use anchor cells to update reference profiles, simply by taking the mean
-#' profile of the anchors.
-#'
-#' Uses anchor cells to estimate platform effects / scaling factors to be
-#' applied to the genes/rows of the reference profile matrix. Then uses Bayesian
-#' math to update the individual elements on X.
-#' @param counts Counts matrix, cells * genes.
-#' @param neg Vector of mean negprobe counts per cell. Can be provided
-#' @param anchors Vector of anchor assignments
-#' @param reference_profiles Matrix of expression profiles of pre-defined
-#'   clusters, e.g. from previous scRNA-seq. These profiles will not be updated
-#'   by the EM algorithm. Colnames must all be included in the init_clust
-#'   variable.
-#' @param align_genes Logical, for whether to align the counts matrix and the
-#'   reference_profiles by gene ID.
-#' @param nb_size The size parameter to assume for the NB distribution.
-#' @param max_rescaling Scaling factors will be truncated above by this value
-#'   and below by its inverse (at 1/value and value)
-#' @return \enumerate{ \item profiles: A profiles matrix with the rows rescaled
-#' according to platform effects and individual elements updated further \item
-#' scaling_factors: A vector of genes' scaling factors (what they were
-#' multiplied by when updating the reference profiles). }
-#' @export
-updateProfilesFromAnchors <-
-  function(counts,
-           neg,
-           anchors,
-           reference_profiles,
-           align_genes = TRUE,
-           nb_size = 10,
-           max_rescaling = 5) {
-  use <- !is.na(anchors)
-  updated_profiles <- Estep(counts = counts[use, ],
-                            clust = anchors[use],
-                            neg = neg[use])
-  return(updated_profiles)
-  }
+#' 
+#' #' Use anchor cells to update reference profiles, simply by taking the mean
+#' #' profile of the anchors.
+#' #'
+#' #' Uses anchor cells to estimate platform effects / scaling factors to be
+#' #' applied to the genes/rows of the reference profile matrix. Then uses Bayesian
+#' #' math to update the individual elements on X.
+#' #' @param counts Counts matrix, cells * genes.
+#' #' @param neg Vector of mean negprobe counts per cell. Can be provided
+#' #' @param anchors Vector of anchor assignments
+#' #' @param reference_profiles Matrix of expression profiles of pre-defined
+#' #'   clusters, e.g. from previous scRNA-seq. These profiles will not be updated
+#' #'   by the EM algorithm. Colnames must all be included in the init_clust
+#' #'   variable.
+#' #' @param align_genes Logical, for whether to align the counts matrix and the
+#' #'   reference_profiles by gene ID.
+#' #' @param nb_size The size parameter to assume for the NB distribution.
+#' #' @param max_rescaling Scaling factors will be truncated above by this value
+#' #'   and below by its inverse (at 1/value and value)
+#' #' @return \enumerate{ \item profiles: A profiles matrix with the rows rescaled
+#' #' according to platform effects and individual elements updated further \item
+#' #' scaling_factors: A vector of genes' scaling factors (what they were
+#' #' multiplied by when updating the reference profiles). }
+#' #' @export
+#' updateProfilesFromAnchors <-
+#'   function(counts,
+#'            neg,
+#'            anchors,
+#'            reference_profiles,
+#'            align_genes = TRUE,
+#'            nb_size = 10,
+#'            max_rescaling = 5) {
+#'   use <- !is.na(anchors)
+#'   updated_profiles <- Estep(counts = counts[use, ],
+#'                             clust = anchors[use],
+#'                             neg = neg[use])
+#'   return(updated_profiles)
+#'   }
+#' 
 
 
 
@@ -197,14 +198,18 @@ estimatePlatformEffects<- function(profiles=profiles,counts =counts,neg =neg, bg
   Shared_Gene<-as.vector(PlatformEff$Gene[!(PlatformEff$Gene %in%blacklist)])
   
   ### Step4: Rescale the raw reference profile
-  rownames(PlatformEff)=PlatformEff$Gene
-  Rescaled_ioprofiles =diag(PlatformEff[Shared_Gene,]$Beta) %*% profiles[Shared_Gene,]
-  rownames(Rescaled_ioprofiles)=Shared_Gene
+  rownames(PlatformEff) <- PlatformEff$Gene
+  Rescaled_ioprofiles <- diag(PlatformEff[Shared_Gene,]$Beta) %*% profiles[Shared_Gene,]
+  rownames(Rescaled_ioprofiles)<- Shared_Gene
+  
+  PlatformEffect<-PlatformEff[Shared_Gene,]$Beta
+  names(PlatformEffect)<- Shared_Gene
   
   return(list(Rescaled_ioprofiles=Rescaled_ioprofiles,
-              PlatformEffect=PlatformEff[Shared_Gene,]$Beta,
+              PlatformEffect=PlatformEffect,
               blacklist=blacklist))
   
 }
+
 
 
