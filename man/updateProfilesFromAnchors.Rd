@@ -8,6 +8,7 @@ profile of the anchors.}
 updateProfilesFromAnchors(
   counts,
   neg,
+  bg = NULL,
   anchors,
   reference_profiles,
   align_genes = TRUE,
@@ -19,6 +20,8 @@ updateProfilesFromAnchors(
 \item{counts}{Counts matrix, cells * genes.}
 
 \item{neg}{Vector of mean negprobe counts per cell. Can be provided}
+
+\item{bg}{Expected background}
 
 \item{anchors}{Vector of anchor assignments}
 

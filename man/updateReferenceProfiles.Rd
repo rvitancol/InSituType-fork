@@ -13,7 +13,11 @@ updateReferenceProfiles(
   anchors = NULL,
   n_anchor_cells = 2000,
   min_anchor_cosine = 0.3,
-  min_anchor_llr = 0.01
+  min_anchor_llr = 0.01,
+  refinement = TRUE,
+  blacklist = NULL,
+  rescale = TRUE,
+  refit = TRUE
 )
 }
 \arguments{
@@ -27,9 +31,10 @@ updateReferenceProfiles(
 
 \item{nb_size}{The size parameter to assume for the NB distribution.}
 
-\item{anchors}{Vector giving "anchor" cell types, for use in semi-supervised
-clustering. Vector elements will be mainly NA's (for non-anchored cells)
-and cell type names for cells to be held constant throughout iterations.}
+\item{anchors}{named vector giving "anchor" cell types with cell_id in names, 
+for use in semi-supervised clustering. Vector elements will be mainly NA's 
+(for non-anchored cells) and cell type names for cells to be held constant 
+throughout iterations.}
 
 \item{n_anchor_cells}{For semi-supervised learning. Maximum number of anchor
 cells to use for each cell type.}
@@ -41,11 +46,27 @@ anchor.}
 \item{min_anchor_llr}{For semi-supervised learning. Cells must have
 (log-likelihood ratio / totalcounts) above this threshold to be used as an
 anchor}
+
+\item{refinement}{flag to further refine the anchors via UMAP projection (default = TRUE)}
+
+\item{blacklist}{vector of genes to be excluded for cell typing}
+
+\item{rescale}{flag to rescale reference profiles for platform effect}
+
+\item{refit}{flag to refit reference profiles based on the anchor cells, run after rescale if rescale = TRUE}
 }
 \value{
-updated reference profiles
+a list 
+\describe{
+    \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
+    \item{blacklist} {a vector of genes to be excluded from cell typing}
+    \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `scale_factor`, for platform effect correction outputs, return when rescale = TRUE}
+    \item{refit_res}{a list of 2 elements, `profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
+}
 }
 \description{
 Update reference profiles using pre-specified anchor cells, or if no anchors
-are specified, by first choosing anchor cells
+are specified, by first choosing anchor cells. Option to return reference 
+profiles rescaled for platform effect and/or to return further refitted profiles 
+based on the observed profiles of anchor cells.
 }

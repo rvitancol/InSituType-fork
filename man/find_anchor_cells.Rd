@@ -14,7 +14,8 @@ find_anchor_cells(
   n_cells = 500,
   min_cosine = 0.3,
   min_scaled_llr = 0.01,
-  insufficient_anchors_thresh = 20
+  insufficient_anchors_thresh = 20,
+  refinement = TRUE
 )
 }
 \arguments{
@@ -44,6 +45,8 @@ above this threshold to be used as an anchor}
 
 \item{insufficient_anchors_thresh}{Cell types that end up with fewer than
 this many anchors will be discarded.}
+
+\item{refinement}{flag to further refine the anchors via UMAP projection (default = TRUE)}
 }
 \value{
 A vector holding anchor cell assignments (or NA) for each cell in the
@@ -52,5 +55,6 @@ A vector holding anchor cell assignments (or NA) for each cell in the
 \description{
 Finds cells with very good fits to the reference profiles, and saves these
 cells for use as "anchors" in the semi-supervised learning version of
-nbclust.
+nbclust. The function would first pick anchor cell candidates through stats 
+and then refine anchors based on umap projection.
 }
