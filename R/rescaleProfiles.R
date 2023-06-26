@@ -75,7 +75,6 @@ updateReferenceProfiles <-
 
 
 
-
 #' estimatePlatformEffects is the function for gene-level platform effect estimation and reference profile re-scaling
 #' Inputs@@
 #' @param profiles = raw reference profile
@@ -86,14 +85,14 @@ updateReferenceProfiles <-
 #' @param blacklist =user specified list of genes to be excluded for the cell typing, for example, 103 problematic probes identified during 6K panel development 
 #' Output@@
 #' @return An list consist of following things
-#' @return 1: rescaled reference profile, which can be ready used as input reference for regular InStituType cell typing or you can do another round of anchor selection and profile updation with rescaled profile
-#' @return 2: gene-level platform effect
-#' @return 3: a vector of genes that are filtered out
+#' @return1 adj_profiles = rescaled reference profile, which can be ready used as input reference for regular InStituType cell typing or you can do another round of anchor selection and profile updation with rescaled profile
+#' @return2 platform_effect = gene-level platform effect
+#' @return3 blacklist = a vector of genes that are filtered out
 #' General workflow@@
-#' extract the anchor cells from input
-#' Run poisson regression with anchor cells
-#' Filter user defined genes(if any) and genes with negative betas 
-#' Re-scale Profile with Beta estimates
+#' @1 extract the anchor cells from input
+#' @2 Run poisson regression with anchor cells
+#' @3 Filter user defined genes(if any) and genes with negative betas 
+#' @4 Re-scale Profile with Beta estimates
 
 
 estimatePlatformEffects<- function(profiles=profiles,counts =counts,neg =neg, bg=bg, 
@@ -165,11 +164,12 @@ estimatePlatformEffects<- function(profiles=profiles,counts =counts,neg =neg, bg
   PlatformEffect<-PlatformEff[Shared_Gene,]$Beta
   names(PlatformEffect)<- Shared_Gene
   
-  return(list(Rescaled_ioprofiles=Rescaled_ioprofiles,
-              PlatformEffect=PlatformEffect,
+  return(list(adj_profiles=Rescaled_ioprofiles,
+              platform_effect=PlatformEffect,
               blacklist=blacklist))
   
 }
+
 
 
 
