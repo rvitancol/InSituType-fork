@@ -115,18 +115,19 @@ updateProfilesFromAnchors <-
 
 
 
-#' updateReferenceProfiles is the function for reference profile re-scaling
+#' estimatePlatformEffects is the function for gene-level platform effect estimation and reference profile re-scaling
 #' Inputs@@
-#' @param ioprofiles_Raw = raw reference profile
-#' @param counts_input= cosmx counts data with genes on column and cells on row
-#' @param negmeans_counts =mean expression for the negative probes for all cells
-#' @param anchors_io_raw = a vector with name being cell ID and value being either cell type or NA
-#' @param Gene_Out =user specified list of genes to be excluded for the cell typing, for example, 103 problematic probes identified during 6K panel development 
+#' @param profiles = raw reference profile
+#' @param counts= cosmx counts data with genes on column and cells on row
+#' @param neg =mean expression for the negative probes for all cells
+#' @param bg= expected bg nosice for all cells
+#' @param anchors = a vector with name being cell ID and value being either cell type or NA
+#' @param blacklist =user specified list of genes to be excluded for the cell typing, for example, 103 problematic probes identified during 6K panel development 
 #' Output@@
 #' @return An list consist of following things
-#' 1: rescaled reference profile, which can be ready used as input reference for regular InStituType cell typing or you can do another round of anchor selection and profile updation with rescaled profile
-#' 2: gene-level platform effect
-#' 3: a vector of genes that are filtered out
+#' @return 1: rescaled reference profile, which can be ready used as input reference for regular InStituType cell typing or you can do another round of anchor selection and profile updation with rescaled profile
+#' @return 2: gene-level platform effect
+#' @return 3: a vector of genes that are filtered out
 #' General workflow@@
 #' extract the anchor cells from input
 #' Run poisson regression with anchor cells
@@ -134,19 +135,19 @@ updateProfilesFromAnchors <-
 #' Re-scale Profile with Beta estimates
 
 
-updateReferenceProfiles<- function(ioprofiles_Raw=ioprofiles_Raw,counts_input=counts_input,negmeans_counts =negmeans_counts, 
-                                   anchors_io_raw=anchors_io_raw, Gene_Out=Gene_Out, ncores=20 ){
+estimatePlatformEffects<- function(profiles=profiles,counts =counts,neg =neg, bg=bg, 
+                                   anchors=anchors, blacklist=blacklist, ncores=20 ){
   
   
   #### Step1: extract anchors based on input anchor information, and only keep anchor cells in CosMx data
-  anchors_io_raw =anchors_io_raw[names(anchors_io_raw) %in% rownames(counts_input)]
-  Common_Genes<-intersect(colnames(counts_input), rownames(ioprofiles_Raw))
+  anchors =anchors[names(anchors) %in% rownames(counts)]
+  Common_Genes<-intersect(colnames(counts), rownames(profiles))
   
-  Anchor_index<-names(anchors_io_raw )[!is.na(anchors_io_raw)]
-  CellType<-anchors_io_raw[Anchor_index]
+  Anchor_index<-names(anchors )[!is.na(anchors)]
+  CellType<-anchors[Anchor_index]
   
-  Count_Data<- counts_input[Anchor_index,Common_Genes]
-  Reference_Data<- t(ioprofiles_Raw[Common_Genes,CellType])
+  Count_Data<- counts[Anchor_index,Common_Genes]
+  Reference_Data<- t(profiles[Common_Genes,CellType])
   
   #get ride of genes that are purely 0s in reference or counts data
   Bad_Genes<-(colSums(Count_Data)==0 | colSums(Reference_Data)==0)
@@ -164,19 +165,11 @@ updateReferenceProfiles<- function(ioprofiles_Raw=ioprofiles_Raw,counts_input=co
   TotalCounts= rowSums(Count_Data)
   TotalExpression=rowSums(Reference_Data)
   
-  #Determine background calculation:s =Vector of mean target counts per cell  
-  s <- Matrix::rowMeans(counts_input)
-  bgmod <- stats::lm(negmeans_counts ~ s - 1)
-  bg <- bgmod$fitted
-  names(bg) <- names(s)
-  
-  
-  
   ### Step2: Run poisson regression with link being Identity to estimate gene-level platform effect based on selected anchor cells
   PlatformEffects_Data<-data.frame(Cell_ID=Count_vector$Cell_ID,
                                    Gene=Count_vector$Gene,
                                    Counts=Count_vector$Count,
-                                   Cell_Type=anchors_io_raw[Count_vector$Cell_ID],
+                                   Cell_Type=anchors[Count_vector$Cell_ID],
                                    Reference=Reference_vector$Count,
                                    Cell_SF=TotalCounts/TotalExpression,
                                    BG=bg[Count_vector$Cell_ID])
@@ -184,7 +177,7 @@ updateReferenceProfiles<- function(ioprofiles_Raw=ioprofiles_Raw,counts_input=co
   
   Gene_list=unique(PlatformEffects_Data$Gene)
   
-  estimatePlatformEffects<-function(gene_ID){
+  PlatformEstimator<-function(gene_ID){
     GLM_Fit<- glm(Counts ~  Reference :  Cell_SF + offset(BG) -1 , family=poisson(link = identity),
                   data=PlatformEffects_Data[PlatformEffects_Data$Gene==gene_ID,],start=c(0))
     
@@ -193,24 +186,24 @@ updateReferenceProfiles<- function(ioprofiles_Raw=ioprofiles_Raw,counts_input=co
                       beta_SE=summary(GLM_Fit)$coefficients["Reference:Cell_SF","Std. Error"]))
   }
   
-  PlatformEff<-mclapply(Gene_list, estimatePlatformEffects, mc.cores = ncores)
+  PlatformEff<-mclapply(Gene_list, PlatformEstimator, mc.cores = ncores)
   PlatformEff<- as.data.frame(do.call(rbind, PlatformEff))
   rownames( PlatformEff)= PlatformEff$Gene
   
   
   ### Step3: Filtering genes with negative betas and pre-specified by the user
-  Gene_Out_addon<-as.vector(PlatformEff$Gene[PlatformEff$Beta<0])
-  Gene_Out<-unique(c(Gene_Out,Gene_Out_addon))
-  Shared_Gene<-as.vector(PlatformEff$Gene[!(PlatformEff$Gene %in%Gene_Out)])
+  blacklist_addon<-as.vector(PlatformEff$Gene[PlatformEff$Beta<0])
+  blacklist<-unique(c(blacklist,blacklist_addon))
+  Shared_Gene<-as.vector(PlatformEff$Gene[!(PlatformEff$Gene %in%blacklist)])
   
   ### Step4: Rescale the raw reference profile
   rownames(PlatformEff)=PlatformEff$Gene
-  Rescaled_ioprofiles =diag(PlatformEff[Shared_Gene,]$Beta) %*% ioprofiles_Raw[Shared_Gene,]
+  Rescaled_ioprofiles =diag(PlatformEff[Shared_Gene,]$Beta) %*% profiles[Shared_Gene,]
   rownames(Rescaled_ioprofiles)=Shared_Gene
   
   return(list(Rescaled_ioprofiles=Rescaled_ioprofiles,
               PlatformEffect=PlatformEff[Shared_Gene,]$Beta,
-              Gene_Out=Gene_Out))
+              blacklist=blacklist))
   
 }
 
