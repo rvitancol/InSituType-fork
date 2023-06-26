@@ -42,7 +42,7 @@ and cell type names for cells to be held constant throughout iterations.}
 A list with three elements: 
 \describe{
     \item{adj_profiles}{Matrix of adjusted reference profiles in genes x cell types format}
-    \item{scale_factor}{a named vector of gene-specific scaling factor for genes in `profiles`, with names in gene name}
+    \item{platform_effect}{a named vector of gene-specific scaling factor for genes in `profiles`, with names in gene name}
     \item{blacklist}{a named vector with genes in name, scale factor in values, for genes with extreme scale factor beyond the range of `scaleFactor_limits` and thus not included in the returned `adj_profiles`, return NULL if no blacklist gene.}
 }
 }

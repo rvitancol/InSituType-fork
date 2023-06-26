@@ -58,3 +58,11 @@ cells for use as "anchors" in the semi-supervised learning version of
 nbclust. The function would first pick anchor cell candidates through stats 
 and then refine anchors based on umap projection.
 }
+\examples{
+data("ioprofiles")
+data("mini_nsclc")
+sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
+find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], 
+                  neg = Matrix::rowMeans(mini_nsclc$neg),
+                  profiles = ioprofiles)
+}

@@ -60,7 +60,8 @@ a list
 \describe{
     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
     \item{blacklist} {a vector of genes to be excluded from cell typing}
-    \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `scale_factor`, for platform effect correction outputs, return when rescale = TRUE}
+    \item{anchors} {a named vector for final anchors used for reference profile update}
+    \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platform_effect`, for platform effect correction outputs, return when rescale = TRUE}
     \item{refit_res}{a list of 2 elements, `profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 }
 }
@@ -69,4 +70,37 @@ Update reference profiles using pre-specified anchor cells, or if no anchors
 are specified, by first choosing anchor cells. Option to return reference 
 profiles rescaled for platform effect and/or to return further refitted profiles 
 based on the observed profiles of anchor cells.
+}
+\examples{
+data("mini_nsclc")
+data("ioprofiles")
+counts <- mini_nsclc$counts
+astats <- get_anchor_stats(counts = mini_nsclc$counts,
+ neg = Matrix::rowMeans(mini_nsclc$neg),
+ profiles = ioprofiles)
+
+# estimate per-cell bg as a fraction of total counts:
+negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
+per.cell.bg <- rowSums(counts) * negmean.per.totcount
+
+# now choose anchors:
+anchors <- choose_anchors_from_stats(counts = counts, 
+                                    neg = mini_nsclc$negmean, 
+                                    bg = per.cell.bg,
+                                    anchorstats = astats, 
+                                    # a very low value chosen for the mini
+                                    # dataset. Typically hundreds of cells
+                                    # would be better.
+                                    n_cells = 50, 
+                                    min_cosine = 0.4, 
+                                    min_scaled_llr = 0.03, 
+                                    insufficient_anchors_thresh = 5)
+
+# The next step is to use the anchors to update the reference profiles:
+
+updateReferenceProfiles(reference_profiles = ioprofiles, 
+                       counts = mini_nsclc$counts, 
+                       neg = mini_nsclc$neg, 
+                       bg = per.cell.bg,
+                       anchors = anchors) 
 }

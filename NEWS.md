@@ -1,3 +1,33 @@
+# InSituType 1.1.1
+
+* Support platform effect correction
+* Support anchor refinement via UMAP projection 
+
+# InSituType 1.1.0
+
+* Support matrices with more than 4B elements
+
+# InSituType 1.0.0
+
+* License updated
+* lldist parallelized with OpenMP
+
+# InSituType 0.99.4
+
+* Re-submission to Bioconductor
+
+# InSituType 0.99.3
+
+* Merge subclustering fix
+
+# InSituType 0.99.2
+
+* Optionally use SingleCellExperiment class
+
+# InSituType 0.99.1
+
+* Added reference to CosMx paper and dataset
+
 # InSituType 0.99.0
 
 * Submission to Bioconductor 3.16

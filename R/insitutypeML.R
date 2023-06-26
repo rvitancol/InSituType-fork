@@ -2,7 +2,10 @@
 #' 
 #' Supervised classification of cells. Each cell is assigned to the cell type 
 #'  under which its observed expression profile is most likely. 
-#' @param counts Counts matrix (or dgCMatrix), cells * genes.
+#' @param x Counts matrix (or dgCMatrix), cells * genes.
+#'
+#'   Alternatively, a \linkS4class{SingleCellExperiment} object containing such
+#'   a matrix.
 #' @param neg Vector of mean negprobe counts per cell. Can be provided 
 #' @param bg Expected background
 #' @param cohort Vector of cells' cohort memberships
@@ -11,6 +14,9 @@
 #'  Colnames must all be included in the init_clust variable.
 #' @param nb_size The size parameter to assume for the NB distribution.
 #' @param align_genes Logical, for whether to align the counts matrix and the reference_profiles by gene ID.
+#' @param ... For the \linkS4class{SingleCellExperiment} method, additional
+#'   arguments to pass to the ANY method.
+#' @param assay.type A string specifying which assay values to use.
 #' @return A list, with the following elements:
 #' \enumerate{
 #' \item clust: a vector given cells' cluster assignments
@@ -18,21 +24,32 @@
 #' \item profiles: Matrix of clusters' mean background-subtracted profiles
 #' \item logliks: Matrix of cells' log-likelihoods under each cluster. Cells in rows, clusters in columns.
 #' }
-#' @export
-insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference_profiles, nb_size = 10, align_genes = TRUE) {
+#'
+#' @name insitutypeML
+#' @examples
+#' data("mini_nsclc")
+#' data("ioprofiles")
+#' sup <- insitutypeML(
+#'  x = mini_nsclc$counts,
+#'  neg = Matrix::rowMeans(mini_nsclc$neg),
+#'  reference_profiles = ioprofiles)
+#' table(sup$clust)
+NULL
+
+.insitutypeML <- function(x, neg = NULL, bg = NULL, cohort = NULL, reference_profiles, nb_size = 10, align_genes = TRUE) {
   
-  if (any(rowSums(counts) == 0)) {
+  if (any(rowSums(x) == 0)) {
     stop("Cells with 0 counts were found. Please remove.")
   }
   
   # get vector of expected background:
-  bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
+  bg <- estimateBackground(counts = x, neg = neg, bg = bg)
   
   # align genes:
   if (align_genes) {
-    counts <- alignGenes(counts = counts, profiles = reference_profiles)
-    reference_profiles <- reference_profiles[colnames(counts), ]
-    
+    x <- alignGenes(counts = x, profiles = reference_profiles)
+    reference_profiles <- reference_profiles[colnames(x), ]
+
   }
   
   # prep cohort vector:
@@ -41,13 +58,10 @@ insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference
   }
   
   # get logliks
-  logliks <- parallel::mclapply(asplit(reference_profiles, 2),
-                    lldist,
-                    mat = counts,
+  logliks <- lldist(x = reference_profiles,
+                    mat = x,
                     bg = bg,
-                    size = nb_size,
-                    mc.cores = numCores())
-  logliks <- do.call(cbind, logliks)
+                    size = nb_size)
   
   # update logliks based on frequencies within cohorts:
   logliks <- update_logliks_with_cohort_freqs(logliks = logliks, 
@@ -62,7 +76,7 @@ insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference
   probs <- logliks2probs(logliks)
   prob <- apply(probs, 1, max)
   names(prob) <- names(clust)
-  profiles <- Estep(counts, 
+  profiles <- Estep(x, 
                     clust = clust,
                     neg = neg)
   # aligns profiles and logliks, removing lost clusters:
@@ -77,3 +91,24 @@ insitutypeML <- function(counts, neg = NULL, bg = NULL, cohort = NULL, reference
              logliks_from_lost_celltypes = round(logliks_from_lost_celltypes, 4))
   return(out)    
 }
+
+############################
+# S4 method definitions 
+############################
+
+#' @export
+#' @rdname insitutypeML
+setGeneric("insitutypeML", function(x, ...) standardGeneric("insitutypeML"))
+
+#' @export
+#' @rdname insitutypeML
+setMethod("insitutypeML", "ANY", .insitutypeML)
+
+#' @export
+#' @rdname insitutypeML
+#' @importFrom SummarizedExperiment assay
+#' @importFrom SingleCellExperiment SingleCellExperiment
+setMethod("insitutypeML", "SingleCellExperiment", function(x, ..., assay.type="counts") {
+  .insitutypeML(t(assay(x, i=assay.type)), ...)
+})
+

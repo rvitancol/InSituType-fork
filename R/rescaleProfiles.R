@@ -30,10 +30,43 @@
 #' \describe{
 #'     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
 #'     \item{blacklist} {a vector of genes to be excluded from cell typing}
-#'     \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `scale_factor`, for platform effect correction outputs, return when rescale = TRUE}
+#'     \item{anchors} {a named vector for final anchors used for reference profile update}
+#'     \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platform_effect`, for platform effect correction outputs, return when rescale = TRUE}
 #'     \item{refit_res}{a list of 2 elements, `profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 #' }
 #' @export
+#' @examples
+#' data("mini_nsclc")
+#' data("ioprofiles")
+#' counts <- mini_nsclc$counts
+#' astats <- get_anchor_stats(counts = mini_nsclc$counts,
+#'  neg = Matrix::rowMeans(mini_nsclc$neg),
+#'  profiles = ioprofiles)
+#'
+#' # estimate per-cell bg as a fraction of total counts:
+#' negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
+#' per.cell.bg <- rowSums(counts) * negmean.per.totcount
+#'
+#' # now choose anchors:
+#' anchors <- choose_anchors_from_stats(counts = counts, 
+#'                                     neg = mini_nsclc$negmean, 
+#'                                     bg = per.cell.bg,
+#'                                     anchorstats = astats, 
+#'                                     # a very low value chosen for the mini
+#'                                     # dataset. Typically hundreds of cells
+#'                                     # would be better.
+#'                                     n_cells = 50, 
+#'                                     min_cosine = 0.4, 
+#'                                     min_scaled_llr = 0.03, 
+#'                                     insufficient_anchors_thresh = 5)
+#'
+#' # The next step is to use the anchors to update the reference profiles:
+#'
+#' updateReferenceProfiles(reference_profiles = ioprofiles, 
+#'                        counts = mini_nsclc$counts, 
+#'                        neg = mini_nsclc$neg, 
+#'                        bg = per.cell.bg,
+#'                        anchors = anchors) 
 updateReferenceProfiles <-
   function(reference_profiles,
            counts,
@@ -116,7 +149,7 @@ updateReferenceProfiles <-
       
       outs[['rescale_res']] <- list(profiles = platformEff_res[['adj_profiles']],
                                     anchors = anchors, 
-                                    scale_factor = platformEff_res[['scale_factor']])  
+                                    platform_effect = platformEff_res[['platform_effect']])  
       
       # update variables for the platform effect corrected outcomes 
       reference_profiles <- platformEff_res[['adj_profiles']]
@@ -178,9 +211,10 @@ updateReferenceProfiles <-
     }
     
     outs[['updated_profiles']] <- reference_profiles
+    outs[['anchors']] <- anchors
     outs[['blacklist']] <- blacklist
 
-    return(out)
+    return(outs)
   }
 
 
@@ -248,7 +282,7 @@ updateProfilesFromAnchors <-
 #' @return A list with three elements: 
 #' \describe{
 #'     \item{adj_profiles}{Matrix of adjusted reference profiles in genes x cell types format}
-#'     \item{scale_factor}{a named vector of gene-specific scaling factor for genes in `profiles`, with names in gene name}
+#'     \item{platform_effect}{a named vector of gene-specific scaling factor for genes in `profiles`, with names in gene name}
 #'     \item{blacklist}{a named vector with genes in name, scale factor in values, for genes with extreme scale factor beyond the range of `scaleFactor_limits` and thus not included in the returned `adj_profiles`, return NULL if no blacklist gene.}
 #' }
 #' @importFrom reshape2 melt
@@ -360,7 +394,7 @@ estimatePlatformEffects <- function(profiles, counts, neg, bg = NULL, anchors = 
   genes_to_use <- scaleFactor_DF$GeneName[! scaleFactor_DF$type %in% c(NA, 'beyond_limits')]
   
   outs <- list(adj_profiles = adj_profiles, 
-               scale_factor = setNames(scaleFactor_DF[genes_to_use, 'scale_factor'], 
+               platform_effect = setNames(scaleFactor_DF[genes_to_use, 'scale_factor'], 
                                        genes_to_use), 
                blacklist = blacklist)
   
