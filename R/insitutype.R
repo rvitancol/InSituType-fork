@@ -143,16 +143,15 @@ NULL
   }
   
   
-  #### update reference profiles ----------------------------------
+  #### update reference profiles only for Supervised or Semi-Supervised clustering ----------------------------------
   fixed_profiles <- NULL
   fixed_sds <- NULL
   if (!is.null(reference_profiles)) { ## This is more for Supervised or Semi-Supervised case 
     if(is.null(reference_sds) & assay_type %in% c("Protein", "protein")){
       stop("For protein data type, the reference SD profile should be provided!")
     }
-    ## Update the profile matrix only for Semi-supervised or Unsupervised cases ##
-    if (update_reference_profiles & n_clusts!=0) {
-      
+    ## Update the profile matrix only for Semi-supervised or Supervised cases ##
+    if (update_reference_profiles) {
       update_result <- updateReferenceProfiles(reference_profiles=reference_profiles,
                                                reference_sds=reference_sds,
                                                counts = counts, 
@@ -253,7 +252,15 @@ NULL
       assay_type=assay_type)$best_clust_number 
   }
   
+  # This is for supervised case with or without reference profile update
   if(n_clusts==0){
+    if(update_reference_profiles){
+      profiles <- fixed_profiles
+      sds <- fixed_sds
+    }else{
+      profiles <- reference_profiles
+      sds <- reference_sds
+    }
     
     if(is.null(reference_profiles)){
       
@@ -265,8 +272,8 @@ NULL
       out <- insitutypeML(counts = counts, 
                           neg = neg, 
                           bg = bg, 
-                          reference_profiles = reference_profiles, 
-                          reference_sds = reference_sds, 
+                          reference_profiles = profiles, 
+                          reference_sds = sds, 
                           cohort = cohort,
                           nb_size = nb_size,
                           assay_type=assay_type,
