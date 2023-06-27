@@ -134,7 +134,8 @@ updateReferenceProfiles <-
                                  align_genes = FALSE,
                                  profiles = reference_profiles[sharedgenes, ],  
                                  anchor_candidates = anchors, 
-                                 nn_cells = n_cells)
+                                 nn_cells = n_cells,
+                                 insufficient_anchors_thresh = insufficient_anchors_thresh)
       }
     }
     
