@@ -34,7 +34,9 @@ A list with three elements:
 \describe{
     \item{rescaled_profiles}{genes * cell types Matrix of rescaled reference profiles with platform effect corrected }
     \item{platformEff_statsDF}{a data.frame for statistics on platform effect estimation with genes in rows and columns for `Gene`, `Beta`, `beta_SE`.}
+    \item{anchors}{a named vector of anchors used for platform effect estimation}
     \item{blacklist}{a vector of genes excluded from cell typing, including both outliers identified in platform effect estimation and the user-defined genes}
+    \item{lostgenes}{a vector of genes excluded from platform effect estiamtion and the returned `rescaled_profiles`}
 }
 }
 \description{

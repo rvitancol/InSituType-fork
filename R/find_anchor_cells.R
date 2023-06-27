@@ -33,7 +33,7 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
   if (align_genes && !is.null(profiles)) {
     counts <- alignGenes(counts = counts, profiles = profiles)
     profiles <- profiles[colnames(counts), ]
-
+    
   }
   
   # get cosine distances:
@@ -139,70 +139,70 @@ choose_anchors_from_stats <-
            min_scaled_llr = 0.01,
            insufficient_anchors_thresh = 20) {
     
-  
-  if (is.null(anchorstats) && (is.null(cos) || is.null(llr))) {
-    stop("Must provide either anchorstats or both cos and llr matrices.")
-  }
-  
-  # get input:
-  if (!is.null(anchorstats)) {
-    cos <- anchorstats$cos
-    llr <- anchorstats$llr
-  }
-  
-  # apply thresholds:
-  cos <- cos * (cos > min_cosine)
-  llr <- llr * (llr > min_scaled_llr)
-  
-  # choose anchors for each cell type:
-  anchors <- rep(NA, nrow(cos))
-  names(anchors) <- rownames(cos)
-  for (cell in colnames(cos)) {
-    score <- llr[, cell] * cos[, cell] * (llr[, cell] > min_scaled_llr) * (cos[, cell] > min_cosine)
-    topn <- order(score, decreasing = TRUE)[seq_len(min(n_cells, sum(score > 0, na.rm = TRUE)))]
-    rm(score)
-    anchors[topn] <- cell
-  }
-  
-  # anchor consolidation: identify and remove anchor cells that are poor fits to
-  # the mean anchor profile for the cell type:
-  for (cell in setdiff(unique(anchors), NA)) {
     
-    use <- (anchors == cell) & !is.na(anchors)
-    # get centroid:
-    if (!is.null(neg)) {
-      mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = neg[use])
-    } else {
-      mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = bg[use])
+    if (is.null(anchorstats) && (is.null(cos) || is.null(llr))) {
+      stop("Must provide either anchorstats or both cos and llr matrices.")
     }
     
-    # get anchors' cosine distances from centroid:
-    newcos <- apply(counts[use, , drop = FALSE], 1, cosine, mean_anchor_profile)
-    updated_anchors <- replace(anchors[use], (newcos < min_cosine), NA)
-    anchors[names(updated_anchors)] <- updated_anchors
+    # get input:
+    if (!is.null(anchorstats)) {
+      cos <- anchorstats$cos
+      llr <- anchorstats$llr
+    }
+    
+    # apply thresholds:
+    cos <- cos * (cos > min_cosine)
+    llr <- llr * (llr > min_scaled_llr)
+    
+    # choose anchors for each cell type:
+    anchors <- rep(NA, nrow(cos))
+    names(anchors) <- rownames(cos)
+    for (cell in colnames(cos)) {
+      score <- llr[, cell] * cos[, cell] * (llr[, cell] > min_scaled_llr) * (cos[, cell] > min_cosine)
+      topn <- order(score, decreasing = TRUE)[seq_len(min(n_cells, sum(score > 0, na.rm = TRUE)))]
+      rm(score)
+      anchors[topn] <- cell
+    }
+    
+    # anchor consolidation: identify and remove anchor cells that are poor fits to
+    # the mean anchor profile for the cell type:
+    for (cell in setdiff(unique(anchors), NA)) {
+      
+      use <- (anchors == cell) & !is.na(anchors)
+      # get centroid:
+      if (!is.null(neg)) {
+        mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = neg[use])
+      } else {
+        mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = bg[use])
+      }
+      
+      # get anchors' cosine distances from centroid:
+      newcos <- apply(counts[use, , drop = FALSE], 1, cosine, mean_anchor_profile)
+      updated_anchors <- replace(anchors[use], (newcos < min_cosine), NA)
+      anchors[names(updated_anchors)] <- updated_anchors
+    }
+    
+    # remove all anchors from cells with too few total anchors:
+    anchornums <- table(anchors)
+    too_few_anchors <- names(anchornums)[anchornums <= insufficient_anchors_thresh]
+    anchors[is.element(anchors, too_few_anchors)] <- NA
+    
+    if (length(setdiff(colnames(cos), unique(anchors))) > 0) {
+      message(paste0("The following cell types had too few anchors and so are being removed from consideration: ",
+                     paste0(setdiff(colnames(cos), unique(anchors)), collapse = ", ")))
+    }
+    
+    if (all(is.na(anchors))) {
+      warning("No anchor cells were selected - not enough cells met the selection criteria.")
+      anchors <- NULL
+    }
+    return(anchors)  
   }
-  
-  # remove all anchors from cells with too few total anchors:
-  anchornums <- table(anchors)
-  too_few_anchors <- names(anchornums)[anchornums <= insufficient_anchors_thresh]
-  anchors[is.element(anchors, too_few_anchors)] <- NA
-  
-  if (length(setdiff(colnames(cos), unique(anchors))) > 0) {
-    message(paste0("The following cell types had too few anchors and so are being removed from consideration: ",
-                   paste0(setdiff(colnames(cos), unique(anchors)), collapse = ", ")))
-  }
-  
-  if (all(is.na(anchors))) {
-    warning("No anchor cells were selected - not enough cells met the selection criteria.")
-    anchors <- NULL
-  }
-  return(anchors)  
-}
-
-  
 
 
-  
+
+
+
 #' Choose anchor cells
 #'
 #' Finds cells with very good fits to the reference profiles, and saves these
@@ -245,42 +245,47 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                               insufficient_anchors_thresh = 20,
                               refinement = FALSE) {
   
+  if (align_genes && !is.null(profiles)) {
+    counts <- alignGenes(counts = counts, profiles = profiles)
+    profiles <- profiles[colnames(counts), ]
+  }
+
   # get cos and llr stats:
   anchorstats <- get_anchor_stats(counts = counts,
-                                   neg = neg,
-                                   bg = bg, 
-                                   align_genes = align_genes,
-                                   profiles = profiles, 
-                                   size = size, 
-                                   min_cosine = min_cosine)  
+                                  neg = neg,
+                                  bg = bg, 
+                                  align_genes = FALSE,
+                                  profiles = profiles, 
+                                  size = size, 
+                                  min_cosine = min_cosine)  
   
   # select anchors based on stats:
   # double number for candidates if do further refinement
   anchor_candidates <- choose_anchors_from_stats(counts = counts, 
-                                                 neg = neg,
-                                                 bg = bg,
-                                                 anchorstats = anchorstats, 
-                                                 cos = NULL, 
-                                                 llr = NULL, 
-                                                 n_cells = ifelse(refinement, n_cells*2, n_cells), 
-                                                 min_cosine = min_cosine, 
-                                                 min_scaled_llr = min_scaled_llr, 
-                                                 insufficient_anchors_thresh = insufficient_anchors_thresh) 
-  # refine anchors via projection:
-  if(refinement){
+                                       neg = neg,
+                                       bg = bg,
+                                       anchorstats = anchorstats, 
+                                       cos = NULL, 
+                                       llr = NULL, 
+                                       n_cells = ifelse(refinement, n_cells*2, n_cells), 
+                                       min_cosine = min_cosine, 
+                                       min_scaled_llr = min_scaled_llr, 
+                                       insufficient_anchors_thresh = insufficient_anchors_thresh) 
+  
+  if(!refinement){
+    return(anchor_candidates)
+  } else {
+    # refine anchors via projection:
     anchors <- refineAnchors(counts = counts, 
-                             neg = neg, bg = NULL, 
-                             align_genes = align_genes,
+                             neg = neg, bg = bg, 
+                             align_genes =  FALSE,
                              profiles = profiles, 
                              anchor_candidates = anchor_candidates, 
-                             nn_cells = n_cells)
-  } else {
-    ahchors <- anchor_candidates
+                             nn_cells = n_cells,
+                             insufficient_anchors_thresh = insufficient_anchors_thresh)
+    return(anchors)
   }
-  
-  
-  return(anchors)
-  
+
 }
 
 
@@ -300,14 +305,18 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #'  Input linear-scale expression, with genes in rows and cell types in columns.
 #' @param anchor_candidates Named vector of anchor candidates with cell_ID in name and corresponding cell type in values. 
 #' @param nn_cells Number of top nearest neighbors to the projected reference profiles to be selected as final anchor cells. 
+#' @param insufficient_anchors_thresh Cell types that end up with fewer than this many anchors will be discarded.
 #' @return anchors, a named vector for the final anchor cells
 #' @importFrom spatstat.geom ppp nncross
 #' @export
 refineAnchors <- function(counts, 
-                          neg = NULL, bg = NULL, 
+                          neg = NULL, 
+                          bg = NULL, 
                           align_genes = TRUE,
-                          profiles, anchor_candidates, 
-                          nn_cells = 500) {
+                          profiles, 
+                          anchor_candidates, 
+                          nn_cells = 500, 
+                          insufficient_anchors_thresh = 20) {
   # anchor candidates 
   cells_to_use <- names(anchor_candidates)[!is.na(anchor_candidates)]
   cells_to_use <- intersect(cells_to_use, rownames(counts))
@@ -326,10 +335,8 @@ refineAnchors <- function(counts,
   
   ### align genes in counts and fixed_profiles
   if (align_genes && !is.null(profiles)) {
-    
     counts <- alignGenes(counts = counts, profiles = profiles)
     profiles <- profiles[colnames(counts), ]
-    
   }
   
   # net expression profiles of anchor candidates, cell x gene 
@@ -378,11 +385,20 @@ refineAnchors <- function(counts,
   message(sprintf("%d out of %d anchors are within top %d nearest neighbors of projected refProfiles of same cell types for %d cell types. ", 
                   length(anchors), length(cells_to_use), nn_cells, length(setdiff(unique(anchors), NA))))
   
-  # get full vector for final anchors including all cells in anchor_candidates,
-  # return NULL if no valid anchors 
-  if(all(is.na(anchors))){
+  # remove all anchors from cells with too few total anchors:
+  anchornums <- table(anchors)
+  too_few_anchors <- names(anchornums)[anchornums <= insufficient_anchors_thresh]
+  anchors[is.element(anchors, too_few_anchors)] <- NA
+  
+  if (length(setdiff(rownames(projRef_umapcoord), unique(anchors))) > 0) {
+    message(paste0("The following cell types had too few anchors and so are being removed from consideration: ",
+                   paste0(setdiff(rownames(projRef_umapcoord), unique(anchors)), collapse = ", ")))
+  }
+  
+  if (all(is.na(anchors))) {
+    warning("No anchor cells were selected - not enough cells met the selection criteria.")
     anchors <- NULL
-  } else {
+  }  else {
     anchors <- setNames(anchors[names(anchor_candidates)], 
                         names(anchor_candidates))
   }

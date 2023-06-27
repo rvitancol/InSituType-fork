@@ -53,7 +53,7 @@ alignGenes <- function(counts, profiles){
   if ((length(lostgenes) > 0) && length(lostgenes < 50)) {
     message(
       paste0(
-        "The following genes in the count data are missing from fixed_profiles and will be omitted from anchor selection: ",
+        "The following genes in the count data are missing from fixed_profiles and will be omitted from downstream: ",
         paste0(lostgenes, collapse = ",")
       )
     )
@@ -62,7 +62,7 @@ alignGenes <- function(counts, profiles){
     message(
       paste0(
         length(lostgenes),
-        " genes in the count data are missing from fixed_profiles and will be omitted from anchor selection"
+        " genes in the count data are missing from fixed_profiles and will be omitted from downstream"
       )
     )
   }

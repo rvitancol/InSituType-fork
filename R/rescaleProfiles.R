@@ -22,6 +22,8 @@
 #' @param min_anchor_llr For semi-supervised learning. Cells must have
 #'   (log-likelihood ratio / totalcounts) above this threshold to be used as an
 #'   anchor
+#' @param insufficient_anchors_thresh Cell types that end up with fewer than
+#'   this many anchors will be discarded.
 #' @param refinement Logical, flag for further anchor refinement via UMAP projection (default = FALSE)
 #' @param blacklist vector of genes to be excluded for cell typing (default = NULL)
 #' @param rescale Logical, flag for platform effect correction (default = FALSE)
@@ -29,10 +31,10 @@
 #' @return a list 
 #' \describe{
 #'     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
-#'     \item{blacklist} {a vector of genes to be excluded from cell typing}
-#'     \item{anchors} {a named vector for final anchors used for reference profile update}
-#'     \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platformEff_statsDF`, for platform effect correction outputs, return when rescale = TRUE}
-#'     \item{refit_res}{a list of 2 elements, `profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
+#'     \item{blacklist}{a vector of genes excluded from the final updated reference profiles}
+#'     \item{anchors}{a named vector for final anchors used for reference profile update}
+#'     \item{rescale_res}{a list of 5 elements, `rescaled_profiles`, `platformEff_statsDF`, `anchors`, `blacklist` and `lostgenes`, for platform effect correction outputs, return when rescale = TRUE}
+#'     \item{refit_res}{a list of 2 elements, `refitted_profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 #' }
 #' @export
 #' @examples
@@ -77,6 +79,7 @@ updateReferenceProfiles <-
            n_anchor_cells = 2000,
            min_anchor_cosine = 0.3,
            min_anchor_llr = 0.01,
+           insufficient_anchors_thresh = 20,
            refinement = FALSE, 
            blacklist = NULL,
            rescale = FALSE, 
@@ -104,18 +107,22 @@ updateReferenceProfiles <-
                                    n_cells = n_anchor_cells, 
                                    min_cosine = min_anchor_cosine, 
                                    min_scaled_llr = min_anchor_llr,
-                                   insufficient_anchors_thresh = 0, 
+                                   insufficient_anchors_thresh = insufficient_anchors_thresh, 
                                    align_genes = FALSE, 
                                    refinement = refinement) 
     } else {
       # test anchors are valid:
-      if (length(anchors) != nrow(counts)) {
-        stop("anchors must have length equal to the number of cells (row) in counts")
-      }
       if(is.null(names(anchors))){
+        if (length(anchors) != nrow(counts)) {
+          stop("anchors must have length equal to the number of cells (row) in counts")
+        }
         names(anchors) <- rownames(counts)
       } else {
         anchors <- anchors[rownames(counts)]
+        
+        if (all(is.na(anchors))) {
+          stop("The provided `anchors` have no shared cell_id in names as the rownames in `counts`.")
+        } 
       }
       
       
@@ -141,38 +148,36 @@ updateReferenceProfiles <-
     ## step 2: rescale profiles for platform effect based on high confidence of anchors
     if(rescale){
       message("Rescale reference profiles for platform effect.")
-      platformEff_res <- estimatePlatformEffects(counts[, sharedgenes], 
-                                                 neg = neg, 
-                                                 bg = bg, 
-                                                 profiles = reference_profiles[sharedgenes, ], 
-                                                 anchors = anchors)
-      
-      outs[['rescale_res']] <- list(profiles = platformEff_res[['rescaled_profiles']],
-                                    anchors = anchors, 
-                                    platformEff_statsDF = platformEff_res[['platformEff_statsDF']])  
-      
-      # update variables for the platform effect corrected outcomes 
-      reference_profiles <- platformEff_res[['rescaled_profiles']]
-      blacklist <- unique(c(blacklist, platformEff_res[['blacklist']]))
+      outs[['rescale_res']] <- estimatePlatformEffects(counts[, sharedgenes], 
+                                                       neg = neg, 
+                                                       bg = bg, 
+                                                       profiles = reference_profiles[sharedgenes, ], 
+                                                       anchors = anchors)
+      # add outliers from platform effect estimation, but not include lostgenes
+      blacklist <- unique(c(blacklist, outs[['rescale_res']][['blacklist']]))
       if(!is.null(blacklist)){
         sharedgenes <- setdiff(sharedgenes, blacklist)
       }
-      rm(platformEff_res)
+      
+      # if just rescale but no refit, blacklist contains lostgenes
+      outs[['updated_profiles']] <- outs[['rescale_res']][['rescaled_profiles']]
+      outs[['blacklist']] <- unique(c(blacklist, outs[['rescale_res']][['lostgenes']]))
     }
     
     
     ## step 3: second around of anchor selection based on corrected profiles
     if (rescale & refit){
       message("Second round of anchor selection given the rescaled reference profiles: ")
-      anchors_second <- find_anchor_cells(counts = counts[, sharedgenes], 
+      genes_for_anchors <- rownames(outs[['rescale_res']][['rescaled_profiles']])
+      anchors_second <- find_anchor_cells(counts = counts[, genes_for_anchors], 
                                           neg = neg, 
                                           bg = bg, 
-                                          profiles = reference_profiles[sharedgenes, ], 
+                                          profiles = outs[['rescale_res']][['rescaled_profiles']], 
                                           size = nb_size, 
                                           n_cells = n_anchor_cells, 
                                           min_cosine = min_anchor_cosine, 
                                           min_scaled_llr = min_anchor_llr,
-                                          insufficient_anchors_thresh = 0, 
+                                          insufficient_anchors_thresh = insufficient_anchors_thresh, 
                                           align_genes = FALSE, 
                                           refinement = refinement) 
       if (is.null(anchors_second)){
@@ -200,20 +205,22 @@ updateReferenceProfiles <-
     
     ## step 4: refit the reference profiles using the second around of anchors 
     if(refit){
-      reference_profiles <- updateProfilesFromAnchors(counts = counts[, sharedgenes],  
-                                                      neg = neg, 
-                                                      bg = bg,
-                                                      anchors = anchors, 
-                                                      reference_profiles = reference_profiles[sharedgenes, ],
-                                                      align_genes = FALSE, 
-                                                      nb_size = nb_size)
-      outs[['refit_res']] <- list(profiles = reference_profiles, 
+      # refit original reference profiles given the anchors, will include lostgenes from platform effect estimation  
+      refitted_profiles <- updateProfilesFromAnchors(counts = counts[, sharedgenes],  
+                                                     neg = neg, 
+                                                     bg = bg,
+                                                     anchors = anchors, 
+                                                     reference_profiles = reference_profiles[sharedgenes, ],
+                                                     align_genes = FALSE, 
+                                                     nb_size = nb_size)
+      outs[['refit_res']] <- list(refitted_profiles = refitted_profiles, 
                                   anchors = anchors)
+      outs[['updated_profiles']] <- refitted_profiles
+      outs[['blacklist']] <- blacklist
     }
     
-    outs[['updated_profiles']] <- reference_profiles
     outs[['anchors']] <- anchors
-    outs[['blacklist']] <- blacklist
+    
     
     return(outs)
   }
@@ -278,7 +285,9 @@ updateProfilesFromAnchors <-
 #' \describe{
 #'     \item{rescaled_profiles}{genes * cell types Matrix of rescaled reference profiles with platform effect corrected }
 #'     \item{platformEff_statsDF}{a data.frame for statistics on platform effect estimation with genes in rows and columns for `Gene`, `Beta`, `beta_SE`.}
+#'     \item{anchors}{a named vector of anchors used for platform effect estimation}
 #'     \item{blacklist}{a vector of genes excluded from cell typing, including both outliers identified in platform effect estimation and the user-defined genes}
+#'     \item{lostgenes}{a vector of genes excluded from platform effect estiamtion and the returned `rescaled_profiles`}
 #' }
 #' @description The general workflow would be: (1) extract the anchor cells from input; 
 #' (2) Run poisson regression with anchor cells; (3) Filter user defined genes(if any) 
@@ -288,7 +297,7 @@ updateProfilesFromAnchors <-
 #' @importFrom parallel mclapply
 #' @importFrom stats glm poisson
 #' @export
-estimatePlatformEffects<- 
+estimatePlatformEffects <- 
   function(profiles,
            counts,
            neg, 
@@ -311,9 +320,19 @@ estimatePlatformEffects<-
     # expanded cell types * genes matrix 
     reference_data <- Matrix::t(profiles[colnames(count_data), unname(anchors)])
     
-    bad_genes <-(Matrix::colSums(count_data)==0 | Matrix::colSums(reference_data)==0)
-    count_data <- count_data[,!bad_genes, drop = F]
-    reference_data <- reference_data[,!bad_genes, drop = F]
+    bad_genes <- (Matrix::colSums(count_data)==0 | Matrix::colSums(reference_data)==0)
+    if(sum(bad_genes)>0){
+      lostgenes <- colnames(count_data)[bad_genes]
+      message(paste0("The following ", sum(bad_genes), 
+                     " genes with zero counts in anchor cells or reference of corresponding cell types, are excluded from platform effect estimation: ", 
+                     paste0(lostgenes, collapse = ",")))
+      
+      count_data <- count_data[,!bad_genes, drop = F]
+      reference_data <- reference_data[,!bad_genes, drop = F]
+    } else {
+      lostgenes <- NULL
+    }
+    
     if(ncol(count_data)<1){
       stop("No shared genes in `anchors` with `counts` above zero.")
     }
@@ -354,11 +373,13 @@ estimatePlatformEffects<-
     ### Step4: Rescale the raw reference profile
     rownames(PlatformEff) <- PlatformEff$Gene
     rescaled_profiles <- diag(PlatformEff[genes_to_keep,]$Beta) %*% profiles[genes_to_keep,]
-    rownames(rescaled_profiles)<- genes_to_keep
+    rownames(rescaled_profiles) <- genes_to_keep
     
-    return(list(rescaled_profiles=rescaled_profiles,
-                platformEff_statsDF=PlatformEffect,
-                blacklist=blacklist))
+    return(list(rescaled_profiles = rescaled_profiles,
+                platformEff_statsDF = PlatformEff,
+                anchors = anchors,
+                blacklist = blacklist,
+                lostgenes = lostgenes))
     
   }
 

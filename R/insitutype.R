@@ -180,6 +180,7 @@ NULL
                                                n_anchor_cells = n_anchor_cells, 
                                                min_anchor_cosine = min_anchor_cosine, 
                                                min_anchor_llr = min_anchor_llr,
+                                               insufficient_anchors_thresh = insufficient_anchors_thresh, 
                                                refinement = refinement, 
                                                rescale = rescale, 
                                                refit = refit)

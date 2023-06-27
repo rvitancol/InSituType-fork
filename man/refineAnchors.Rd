@@ -11,7 +11,8 @@ refineAnchors(
   align_genes = TRUE,
   profiles,
   anchor_candidates,
-  nn_cells = 500
+  nn_cells = 500,
+  insufficient_anchors_thresh = 20
 )
 }
 \arguments{
@@ -30,6 +31,8 @@ Input linear-scale expression, with genes in rows and cell types in columns.}
 \item{anchor_candidates}{Named vector of anchor candidates with cell_ID in name and corresponding cell type in values.}
 
 \item{nn_cells}{Number of top nearest neighbors to the projected reference profiles to be selected as final anchor cells.}
+
+\item{insufficient_anchors_thresh}{Cell types that end up with fewer than this many anchors will be discarded.}
 }
 \value{
 anchors, a named vector for the final anchor cells

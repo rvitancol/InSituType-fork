@@ -14,6 +14,7 @@ updateReferenceProfiles(
   n_anchor_cells = 2000,
   min_anchor_cosine = 0.3,
   min_anchor_llr = 0.01,
+  insufficient_anchors_thresh = 20,
   refinement = FALSE,
   blacklist = NULL,
   rescale = FALSE,
@@ -47,6 +48,9 @@ anchor.}
 (log-likelihood ratio / totalcounts) above this threshold to be used as an
 anchor}
 
+\item{insufficient_anchors_thresh}{Cell types that end up with fewer than
+this many anchors will be discarded.}
+
 \item{refinement}{Logical, flag for further anchor refinement via UMAP projection (default = FALSE)}
 
 \item{blacklist}{vector of genes to be excluded for cell typing (default = NULL)}
@@ -59,10 +63,10 @@ anchor}
 a list 
 \describe{
     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
-    \item{blacklist} {a vector of genes to be excluded from cell typing}
-    \item{anchors} {a named vector for final anchors used for reference profile update}
-    \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platformEff_statsDF`, for platform effect correction outputs, return when rescale = TRUE}
-    \item{refit_res}{a list of 2 elements, `profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
+    \item{blacklist}{a vector of genes excluded from the final updated reference profiles}
+    \item{anchors}{a named vector for final anchors used for reference profile update}
+    \item{rescale_res}{a list of 5 elements, `rescaled_profiles`, `platformEff_statsDF`, `anchors`, `blacklist` and `lostgenes`, for platform effect correction outputs, return when rescale = TRUE}
+    \item{refit_res}{a list of 2 elements, `refitted_profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 }
 }
 \description{
