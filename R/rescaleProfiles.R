@@ -22,16 +22,16 @@
 #' @param min_anchor_llr For semi-supervised learning. Cells must have
 #'   (log-likelihood ratio / totalcounts) above this threshold to be used as an
 #'   anchor
-#' @param refinement flag to further refine the anchors via UMAP projection (default = TRUE)
-#' @param blacklist vector of genes to be excluded for cell typing 
-#' @param rescale flag to rescale reference profiles for platform effect 
-#' @param refit flag to refit reference profiles based on the anchor cells, run after rescale if rescale = TRUE
+#' @param refinement Logical, flag for further anchor refinement via UMAP projection (default = FALSE)
+#' @param blacklist vector of genes to be excluded for cell typing (default = NULL)
+#' @param rescale Logical, flag for platform effect correction (default = FALSE)
+#' @param refit Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)
 #' @return a list 
 #' \describe{
 #'     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
 #'     \item{blacklist} {a vector of genes to be excluded from cell typing}
 #'     \item{anchors} {a named vector for final anchors used for reference profile update}
-#'     \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platform_effect`, for platform effect correction outputs, return when rescale = TRUE}
+#'     \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platformEff_statsDF`, for platform effect correction outputs, return when rescale = TRUE}
 #'     \item{refit_res}{a list of 2 elements, `profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 #' }
 #' @export
@@ -77,9 +77,9 @@ updateReferenceProfiles <-
            n_anchor_cells = 2000,
            min_anchor_cosine = 0.3,
            min_anchor_llr = 0.01,
-           refinement = TRUE, 
+           refinement = FALSE, 
            blacklist = NULL,
-           rescale = TRUE, 
+           rescale = FALSE, 
            refit = TRUE) {
     
     if(!any(rescale, refit)){
@@ -147,16 +147,17 @@ updateReferenceProfiles <-
                                                  profiles = reference_profiles[sharedgenes, ], 
                                                  anchors = anchors)
       
-      outs[['rescale_res']] <- list(profiles = platformEff_res[['adj_profiles']],
+      outs[['rescale_res']] <- list(profiles = platformEff_res[['rescaled_profiles']],
                                     anchors = anchors, 
-                                    platform_effect = platformEff_res[['platform_effect']])  
+                                    platformEff_statsDF = platformEff_res[['platformEff_statsDF']])  
       
       # update variables for the platform effect corrected outcomes 
-      reference_profiles <- platformEff_res[['adj_profiles']]
+      reference_profiles <- platformEff_res[['rescaled_profiles']]
       blacklist <- unique(c(blacklist, platformEff_res[['blacklist']]))
       if(!is.null(blacklist)){
         sharedgenes <- setdiff(sharedgenes, blacklist)
       }
+      rm(platformEff_res)
     }
     
     
@@ -179,11 +180,11 @@ updateReferenceProfiles <-
                 Consider to 1. make anchor selection more generous, try `refinement = FALSE`. 2. select anchors by hand. 3. do `rescale` and `refit` in separate step. ")
       } else {
         # combine both rounds of anchors, which are in same cell_id orders as counts 
-        use <- which(!(is.na(anchors) & is.na(anchors_second)))
+        anchors_second <- anchors_second[names(anchors)]
         combined_anchors <- sapply(
           seq_along(anchors), 
           function(idx){
-            ct <- setdiff(c(anchors[idx], anchors_second[idx]), NA)
+            ct <- setdiff(unique(c(anchors[idx], anchors_second[idx])), NA)
             if(length(ct)!=1){
               # not to use if conflicts btw 2 rounds of anchor selection
               return(NA)
@@ -196,16 +197,16 @@ updateReferenceProfiles <-
       }
     }
     
-
+    
     ## step 4: refit the reference profiles using the second around of anchors 
     if(refit){
       reference_profiles <- updateProfilesFromAnchors(counts = counts[, sharedgenes],  
-                                                    neg = neg, 
-                                                    bg = bg,
-                                                    anchors = anchors, 
-                                                    reference_profiles = reference_profiles[sharedgenes, ],
-                                                    align_genes = FALSE, 
-                                                    nb_size = nb_size)
+                                                      neg = neg, 
+                                                      bg = bg,
+                                                      anchors = anchors, 
+                                                      reference_profiles = reference_profiles[sharedgenes, ],
+                                                      align_genes = FALSE, 
+                                                      nb_size = nb_size)
       outs[['refit_res']] <- list(profiles = reference_profiles, 
                                   anchors = anchors)
     }
@@ -213,7 +214,7 @@ updateReferenceProfiles <-
     outs[['updated_profiles']] <- reference_profiles
     outs[['anchors']] <- anchors
     outs[['blacklist']] <- blacklist
-
+    
     return(outs)
   }
 
@@ -261,12 +262,9 @@ updateProfilesFromAnchors <-
   }
 
 
-#' Platform effect adjustment on reference profiles based on the expression profiles of high confident anchors 
+#' Platform effect adjustment on reference profiles based on the expression profiles of anchors 
 #' 
-#' Calculates gene-wise scaling factor between reference profiles and the provided 
-#' cluster mean profiles of high confidence anchors for high expressor genes in 
-#' either profiles, and then adjusts the reference profiles accordingly to get 
-#' the platform effect corrected profiles
+#' Calculates gene-wise scaling factor between reference profiles and the observed profiles of the provided anchors.
 #' @param profiles Matrix of reference profiles holding mean expression of genes x cell types. 
 #'  Input linear-scale expression, with genes in rows and cell types in columns.
 #' @param counts Counts matrix, cells * genes.
@@ -275,130 +273,92 @@ updateProfilesFromAnchors <-
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
 #'   and cell type names for cells to be held constant throughout iterations.
-#' @param min_ref Minimal expression values in reference profiles to define high expressors in reference, default = 1
-#' @param cutoff_ref Cutoff in quantile to define high expressors of each cell type in reference profiles, default = 0.6
-#' @param cutoff_obs Cutoff in quantile to define high expressors of each cell type in observed profiles, default = 0.9 
-#' @param scaleFactor_limits Vector of 2 elements to define the range of per gene scale factors to be consider in the adjusted reference profiles, set to NULL if not to exclude based on scale factor value, default = c(0.01, 100)
+#' @param blacklist vector of user-defined genes to be excluded for cell typing (default = NULL)
 #' @return A list with three elements: 
 #' \describe{
-#'     \item{adj_profiles}{Matrix of adjusted reference profiles in genes x cell types format}
-#'     \item{platform_effect}{a named vector of gene-specific scaling factor for genes in `profiles`, with names in gene name}
-#'     \item{blacklist}{a named vector with genes in name, scale factor in values, for genes with extreme scale factor beyond the range of `scaleFactor_limits` and thus not included in the returned `adj_profiles`, return NULL if no blacklist gene.}
+#'     \item{rescaled_profiles}{genes * cell types Matrix of rescaled reference profiles with platform effect corrected }
+#'     \item{platformEff_statsDF}{a data.frame for statistics on platform effect estimation with genes in rows and columns for `Gene`, `Beta`, `beta_SE`.}
+#'     \item{blacklist}{a vector of genes excluded from cell typing, including both outliers identified in platform effect estimation and the user-defined genes}
 #' }
-#' @importFrom reshape2 melt
+#' @description The general workflow would be: (1) extract the anchor cells from input; 
+#' (2) Run poisson regression with anchor cells; (3) Filter user defined genes(if any) 
+#' and genes with negative betas; (4) Re-scale Profile with Beta estimates. 
+#' @importFrom data.table data.table melt
+#' @importFrom Matrix colSums t rowSums
+#' @importFrom parallel mclapply
+#' @importFrom stats glm poisson
 #' @export
-estimatePlatformEffects <- function(profiles, counts, neg, bg = NULL, anchors = NULL,
-                                    min_ref = 1, cutoff_ref = 0.6, 
-                                    cutoff_obs = 0.9, 
-                                    scaleFactor_limits = c(0.01, 100)){
-  # get observed profiles given the provided anchors
-  cells_to_use <- intersect(names(anchors)[!is.na(anchors)], rownames(counts))
-  bg <- estimateBackground(counts, neg, bg)
-  obs_profiles <- Estep(counts = counts[cells_to_use, ], 
-                        clust = anchors[cells_to_use],
-                        neg = bg[cells_to_use])
-  
-  
-  cts_to_use <- intersect(colnames(profiles), colnames(obs_profiles))
-  if(length(cts_to_use)<3){
-    stop(sprintf('%d cell types shared between `profiles` and ` obs_profiles`. Must have at least 3 shared cell types for platform effect adjustment.', length(cts_to_use)))
-  }
-  
-  scaleFactor_DF <- data.frame(GeneName = rownames(profiles), 
-                               scale_factor = rep(1, nrow(profiles)), 
-                               type = rep(NA, nrow(profiles)))
-  rownames(scaleFactor_DF) <- scaleFactor_DF$GeneName
-  
-  sharedgenes <- intersect(rownames(profiles), rownames(obs_profiles))
-  scaleFactor_DF[sharedgenes, 'type'] <- 'shared'
-  
-  
-  # get observed / reference efficiency ratio for each gene under each cell type ----
-  # cell types x genes ratio matrix
-  ratioMat <- mapply(function(x, y) x/y, 
-                     as.data.frame(t(obs_profiles[sharedgenes, cts_to_use])),
-                     as.data.frame(t(profiles[sharedgenes, cts_to_use])))
-  rownames(ratioMat) <- cts_to_use
-  
-  # flag genes with < min_ref or cutoff_ref quantile expression in given cell type for profiles
-  cutoff_perCT <- pmax(apply(profiles[sharedgenes, cts_to_use], 2, quantile, cutoff_ref), min_ref)
-  mat_low_ref <- (sweep(profiles[sharedgenes, cts_to_use], 2, 
-                        cutoff_perCT, '-') < 0)
-  # flag high expressors in df
-  high_genes <- sharedgenes[rowSums(mat_low_ref) < ncol(mat_low_ref)]
-  scaleFactor_DF[high_genes, 'type'] <- 'high_ref'
-  
-  # flag genes with < cutoff_obs quantile expression in given cell type for obs_profiles
-  cutoff_perCT <- apply(obs_profiles[sharedgenes, cts_to_use], 2, quantile, cutoff_obs)
-  mat_low_obs <- (sweep(obs_profiles[sharedgenes, cts_to_use], 2, 
-                        cutoff_perCT, '-') < 0)
-  # flag high expressors in df
-  high_genes2 <- sharedgenes[rowSums(mat_low_obs) < ncol(mat_low_obs)]
-  scaleFactor_DF[high_genes2, 'type'] <- 'high_obs'
-  scaleFactor_DF[intersect(high_genes, high_genes2), 'type'] <- 'high_both'
-  
-  # genes x cell types matrix to flag genes with low expression in both profiles
-  mat_low_both <- mat_low_ref * mat_low_obs
-  
-  
-  # genes x cell types matrix for obs vs. ref ratio of high expressors in either profiles
-  cleanMat <- t(ratioMat)
-  cleanMat[which(mat_low_both >0)] <- NA
-  cleanMat <- cleanMat[rowSums(cleanMat, na.rm = T) >0, ]
-  
-  
-  
-  # get baseline observed / reference efficiency ratio for genes low in both profiles ----
-  genes_to_use <- setdiff(sharedgenes, rownames(cleanMat))
-  
-  # get linear regression of those genes for obs vs. ref
-  my_data <- reshape2::melt(obs_profiles[genes_to_use, cts_to_use])
-  
-  my_data <- merge(my_data , 
-                   reshape2::melt(profiles[genes_to_use, cts_to_use]), 
-                   by = c("Var1", "Var2"))
-  colnames(my_data) <- c("GeneName", "CellType", "obs", "ref")
-  
-  # remove genes with zero in either ones
-  my_data <- my_data[apply(my_data[, c("obs", "ref")], 1, min) >0, ]
-  
-  my.lm <- lm(obs~ref, my_data)
-  baseline_ratio <- my.lm$coefficients[2]
-  
-  
-  # per gene scale factor for high expressors across cell types ---
-  scaleFactor <- rowMeans(cleanMat, na.rm = T)/ baseline_ratio
-  scaleFactor_DF[names(scaleFactor), 'scale_factor'] <- unname(scaleFactor)
-  
-  # platform effect corrected reference
-  adj_profiles <- profiles
-  adj_profiles[names(scaleFactor), ] <- adj_profiles[names(scaleFactor), ] * scaleFactor
-  
-  # remove blacklist genes with extreme platform effect
-  if(!is.null(scaleFactor_limits)){
-    blacklist <- scaleFactor[scaleFactor < min(scaleFactor_limits) | scaleFactor > max(scaleFactor_limits)]
+estimatePlatformEffects<- 
+  function(profiles,
+           counts,
+           neg, 
+           bg=NULL, 
+           anchors, 
+           blacklist=NULL){
     
-    scaleFactor_DF[names(blacklist), 'type'] <- 'beyond_limits'
-    adj_profiles <- adj_profiles[!(rownames(adj_profiles) %in% names(blacklist)), ]
-  } else {
-    blacklist <- NULL
-  } 
-  
-  if (length(blacklist)>0){
-    message(sprintf('%d genes with extreme scale factor values are excluded in the `adj_profiles`: %s', 
-                    length(blacklist), list(round(blacklist, 4))))
-  }  else {
-    blacklist <- NULL
+    #### Step1: clean up and prepare inputs, foucs on anchors only
+    bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
+    # non-NA anchors 
+    anchors <- anchors[!is.na(anchors)]
+    anchors <- anchors[(anchors %in% colnames(profiles)) & (names(anchors) %in% rownames(counts))]
+    if(length(anchors)<1){
+      stop("The provided non-NA `anchors` are either not present in `counts` or have no shared cell types with `profiles`, check if missing names for cell_id in `anchors`.") 
+    }
+    
+    # focus on shared genes and non-zero genes
+    count_data <- alignGenes(counts = counts[names(anchors), ], 
+                             profiles = profiles)
+    # expanded cell types * genes matrix 
+    reference_data <- Matrix::t(profiles[colnames(count_data), unname(anchors)])
+    
+    bad_genes <-(Matrix::colSums(count_data)==0 | Matrix::colSums(reference_data)==0)
+    count_data <- count_data[,!bad_genes, drop = F]
+    reference_data <- reference_data[,!bad_genes, drop = F]
+    if(ncol(count_data)<1){
+      stop("No shared genes in `anchors` with `counts` above zero.")
+    }
+    
+    # fast conversion to data.frame for glm
+    count_vector <- { dt = data.table::melt(data.table::data.table(count_data, keep.rownames = TRUE) , id.vars = c("rn"))} 
+    colnames(count_vector) <- c("Cell_ID","Gene","Counts")
+    
+    reference_vector <- data.table::melt(data.table::data.table(reference_data, keep.rownames = TRUE) , id.vars = c("rn"))
+    colnames(reference_vector) <- c("Cell_Type","Gene","Reference")
+    
+    ### Step2: Run poisson regression with link being Identity to estimate gene-level platform effect based on selected anchor cells
+    query_DF <- as.data.frame(cbind(count_vector, reference_vector[, Gene:=NULL]))
+    query_DF[['BG']] <- bg[count_vector$Cell_ID]
+    # cell level scaling factor between obs vs. reference 
+    query_DF[['Cell_SF']] <- Matrix::rowSums(count_data)/Matrix::rowSums(reference_data)
+    
+    
+    PlatformEstimator <- function(gene_ID){
+      GLM_Fit<- stats::glm(Counts ~  Reference :  Cell_SF + offset(BG) -1 , family= stats::poisson(link = "identity"),
+                           data=query_DF[query_DF$Gene==gene_ID,],start=c(0))
+      
+      return(data.frame(Gene=gene_ID,
+                        Beta=GLM_Fit$coefficients["Reference:Cell_SF"],
+                        beta_SE=summary(GLM_Fit)$coefficients["Reference:Cell_SF","Std. Error"]))
+    }
+    
+    PlatformEff <- parallel::mclapply(colnames(count_data), PlatformEstimator, mc.cores = numCores())
+    PlatformEff <- as.data.frame(do.call(rbind, PlatformEff))
+    rownames(PlatformEff) <- PlatformEff$Gene
+    
+    
+    ### Step3: Filtering genes with negative betas and pre-specified by the user
+    blacklist_addon <- as.vector(PlatformEff$Gene[PlatformEff$Beta<0])
+    blacklist <- unique(c(blacklist,blacklist_addon))
+    genes_to_keep <- as.vector(PlatformEff$Gene[!(PlatformEff$Gene %in%blacklist)])
+    
+    ### Step4: Rescale the raw reference profile
+    rownames(PlatformEff) <- PlatformEff$Gene
+    rescaled_profiles <- diag(PlatformEff[genes_to_keep,]$Beta) %*% profiles[genes_to_keep,]
+    rownames(rescaled_profiles)<- genes_to_keep
+    
+    return(list(rescaled_profiles=rescaled_profiles,
+                platformEff_statsDF=PlatformEffect,
+                blacklist=blacklist))
+    
   }
-  
-  genes_to_use <- scaleFactor_DF$GeneName[! scaleFactor_DF$type %in% c(NA, 'beyond_limits')]
-  
-  outs <- list(adj_profiles = adj_profiles, 
-               platform_effect = setNames(scaleFactor_DF[genes_to_use, 'scale_factor'], 
-                                       genes_to_use), 
-               blacklist = blacklist)
-  
-  return(outs)
-  
-}
 

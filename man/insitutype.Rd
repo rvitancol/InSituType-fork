@@ -33,7 +33,10 @@ insitutype(x, ...)
   n_anchor_cells = 2000,
   min_anchor_cosine = 0.3,
   min_anchor_llr = 0.03,
-  insufficient_anchors_thresh = 20
+  insufficient_anchors_thresh = 20,
+  refinement = FALSE,
+  rescale = FALSE,
+  refit = TRUE
 )
 
 \S4method{insitutype}{SingleCellExperiment}(x, ..., assay.type = "counts")
@@ -122,6 +125,12 @@ anchor}
 
 \item{insufficient_anchors_thresh}{Cell types that end up with fewer than
 this many anchors after anchor selection will be discarded.}
+
+\item{refinement}{Logical, flag for further anchor refinement, used when update_reference_profiles = TRUE (default = FALSE)}
+
+\item{rescale}{Logical, flag for platform effect correction, used when update_reference_profiles = TRUE (default = FALSE)}
+
+\item{refit}{Logical, flag for fitting reference profiles to anchors, used when update_reference_profiles = TRUE (default = TRUE)}
 
 \item{assay.type}{A string specifying which assay values to use.}
 }

@@ -89,6 +89,9 @@
 #'   anchor
 #' @param insufficient_anchors_thresh Cell types that end up with fewer than
 #'   this many anchors after anchor selection will be discarded.
+#' @param refinement Logical, flag for further anchor refinement, used when update_reference_profiles = TRUE (default = FALSE)
+#' @param rescale Logical, flag for platform effect correction, used when update_reference_profiles = TRUE (default = FALSE)
+#' @param refit Logical, flag for fitting reference profiles to anchors, used when update_reference_profiles = TRUE (default = TRUE)
 #' @param ... For the \linkS4class{SingleCellExperiment} method, additional
 #'   arguments to pass to the ANY method.
 #' @param assay.type A string specifying which assay values to use.
@@ -144,7 +147,10 @@ NULL
                         n_anchor_cells = 2000,
                         min_anchor_cosine = 0.3,
                         min_anchor_llr = 0.03,
-                        insufficient_anchors_thresh = 20) {
+                        insufficient_anchors_thresh = 20,
+                        refinement = FALSE, 
+                        rescale = FALSE, 
+                        refit = TRUE) {
   
   
   #### preliminaries ---------------------------
@@ -173,7 +179,10 @@ NULL
                                                anchors = anchors,
                                                n_anchor_cells = n_anchor_cells, 
                                                min_anchor_cosine = min_anchor_cosine, 
-                                               min_anchor_llr = min_anchor_llr)
+                                               min_anchor_llr = min_anchor_llr,
+                                               refinement = refinement, 
+                                               rescale = rescale, 
+                                               refit = refit)
       fixed_profiles <- update_result$updated_profiles
       anchors <- update_result$anchors
     } else {

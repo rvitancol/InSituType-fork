@@ -14,9 +14,9 @@ updateReferenceProfiles(
   n_anchor_cells = 2000,
   min_anchor_cosine = 0.3,
   min_anchor_llr = 0.01,
-  refinement = TRUE,
+  refinement = FALSE,
   blacklist = NULL,
-  rescale = TRUE,
+  rescale = FALSE,
   refit = TRUE
 )
 }
@@ -47,13 +47,13 @@ anchor.}
 (log-likelihood ratio / totalcounts) above this threshold to be used as an
 anchor}
 
-\item{refinement}{flag to further refine the anchors via UMAP projection (default = TRUE)}
+\item{refinement}{Logical, flag for further anchor refinement via UMAP projection (default = FALSE)}
 
-\item{blacklist}{vector of genes to be excluded for cell typing}
+\item{blacklist}{vector of genes to be excluded for cell typing (default = NULL)}
 
-\item{rescale}{flag to rescale reference profiles for platform effect}
+\item{rescale}{Logical, flag for platform effect correction (default = FALSE)}
 
-\item{refit}{flag to refit reference profiles based on the anchor cells, run after rescale if rescale = TRUE}
+\item{refit}{Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)}
 }
 \value{
 a list 
@@ -61,7 +61,7 @@ a list
     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
     \item{blacklist} {a vector of genes to be excluded from cell typing}
     \item{anchors} {a named vector for final anchors used for reference profile update}
-    \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platform_effect`, for platform effect correction outputs, return when rescale = TRUE}
+    \item{rescale_res}{a list of 3 elements, `profiles`, `anchors` and `platformEff_statsDF`, for platform effect correction outputs, return when rescale = TRUE}
     \item{refit_res}{a list of 2 elements, `profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 }
 }

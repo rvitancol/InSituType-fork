@@ -15,7 +15,7 @@ find_anchor_cells(
   min_cosine = 0.3,
   min_scaled_llr = 0.01,
   insufficient_anchors_thresh = 20,
-  refinement = TRUE
+  refinement = FALSE
 )
 }
 \arguments{
@@ -46,7 +46,7 @@ above this threshold to be used as an anchor}
 \item{insufficient_anchors_thresh}{Cell types that end up with fewer than
 this many anchors will be discarded.}
 
-\item{refinement}{flag to further refine the anchors via UMAP projection (default = TRUE)}
+\item{refinement}{flag to further refine the anchors via UMAP projection (default = FALSE)}
 }
 \value{
 A vector holding anchor cell assignments (or NA) for each cell in the

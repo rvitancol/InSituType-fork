@@ -70,3 +70,20 @@ alignGenes <- function(counts, profiles){
   return(counts)
 }
 
+
+#' Get number of cores for parallelized operations
+#'
+#' @return number of cores to use for mclapply
+#' @export
+numCores <- function() {
+  num_cores <- 1
+  if (.Platform$OS.type == "unix") {
+    if (is.null(getOption("mc.cores"))) {
+      num_cores <- parallel::detectCores() - 2
+    } else {
+      num_cores <- getOption("mc.cores")
+    }
+    
+  }
+  return(num_cores)
+}

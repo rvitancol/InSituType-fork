@@ -2,18 +2,15 @@
 % Please edit documentation in R/rescaleProfiles.R
 \name{estimatePlatformEffects}
 \alias{estimatePlatformEffects}
-\title{Platform effect adjustment on reference profiles based on the expression profiles of high confident anchors}
+\title{Platform effect adjustment on reference profiles based on the expression profiles of anchors}
 \usage{
 estimatePlatformEffects(
   profiles,
   counts,
   neg,
   bg = NULL,
-  anchors = NULL,
-  min_ref = 1,
-  cutoff_ref = 0.6,
-  cutoff_obs = 0.9,
-  scaleFactor_limits = c(0.01, 100)
+  anchors,
+  blacklist = NULL
 )
 }
 \arguments{
@@ -30,25 +27,21 @@ Input linear-scale expression, with genes in rows and cell types in columns.}
 clustering. Vector elements will be mainly NA's (for non-anchored cells)
 and cell type names for cells to be held constant throughout iterations.}
 
-\item{min_ref}{Minimal expression values in reference profiles to define high expressors in reference, default = 1}
-
-\item{cutoff_ref}{Cutoff in quantile to define high expressors of each cell type in reference profiles, default = 0.6}
-
-\item{cutoff_obs}{Cutoff in quantile to define high expressors of each cell type in observed profiles, default = 0.9}
-
-\item{scaleFactor_limits}{Vector of 2 elements to define the range of per gene scale factors to be consider in the adjusted reference profiles, set to NULL if not to exclude based on scale factor value, default = c(0.01, 100)}
+\item{blacklist}{vector of user-defined genes to be excluded for cell typing (default = NULL)}
 }
 \value{
 A list with three elements: 
 \describe{
-    \item{adj_profiles}{Matrix of adjusted reference profiles in genes x cell types format}
-    \item{platform_effect}{a named vector of gene-specific scaling factor for genes in `profiles`, with names in gene name}
-    \item{blacklist}{a named vector with genes in name, scale factor in values, for genes with extreme scale factor beyond the range of `scaleFactor_limits` and thus not included in the returned `adj_profiles`, return NULL if no blacklist gene.}
+    \item{rescaled_profiles}{genes * cell types Matrix of rescaled reference profiles with platform effect corrected }
+    \item{platformEff_statsDF}{a data.frame for statistics on platform effect estimation with genes in rows and columns for `Gene`, `Beta`, `beta_SE`.}
+    \item{blacklist}{a vector of genes excluded from cell typing, including both outliers identified in platform effect estimation and the user-defined genes}
 }
 }
 \description{
-Calculates gene-wise scaling factor between reference profiles and the provided 
-cluster mean profiles of high confidence anchors for high expressor genes in 
-either profiles, and then adjusts the reference profiles accordingly to get 
-the platform effect corrected profiles
+The general workflow would be: (1) extract the anchor cells from input; 
+(2) Run poisson regression with anchor cells; (3) Filter user defined genes(if any) 
+and genes with negative betas; (4) Re-scale Profile with Beta estimates.
+}
+\details{
+Calculates gene-wise scaling factor between reference profiles and the observed profiles of the provided anchors.
 }
