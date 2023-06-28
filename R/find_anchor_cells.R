@@ -308,6 +308,7 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #' @param insufficient_anchors_thresh Cell types that end up with fewer than this many anchors will be discarded.
 #' @return anchors, a named vector for the final anchor cells
 #' @importFrom spatstat.geom ppp nncross
+#' @importFrom uwot umap_transform
 #' @export
 refineAnchors <- function(counts, 
                           neg = NULL, 
