@@ -154,26 +154,28 @@ updateReferenceProfiles <-
                                                        bg = bg, 
                                                        profiles = reference_profiles[sharedgenes, ], 
                                                        anchors = anchors)
-      # add outliers from platform effect estimation, but not include lostgenes
+      
+      # add outliers from platform effect estimation, but exclude lostgenes
       blacklist <- unique(c(blacklist, outs[['rescale_res']][['blacklist']]))
       if(!is.null(blacklist)){
         sharedgenes <- setdiff(sharedgenes, blacklist)
       }
       
-      # if just rescale but no refit, blacklist contains lostgenes
-      outs[['updated_profiles']] <- outs[['rescale_res']][['rescaled_profiles']]
-      outs[['blacklist']] <- unique(c(blacklist, outs[['rescale_res']][['lostgenes']]))
+      if(!is.null(outs[['rescale_res']][['lostgenes']])){
+        # add lostgenes with beta =1  back to updated profiles 
+        outs[['updated_profiles']] <- rbind(outs[['rescale_res']][['rescaled_profiles']], 
+                                            reference_profiles[outs[['rescale_res']][['lostgenes']], ]) 
+      }
     }
     
     
     ## step 3: second around of anchor selection based on corrected profiles
     if (rescale & refit){
-      message("Second round of anchor selection given the rescaled reference profiles: ")
-      genes_for_anchors <- rownames(outs[['rescale_res']][['rescaled_profiles']])
-      anchors_second <- find_anchor_cells(counts = counts[, genes_for_anchors], 
+      message("Second round of anchor selection given the rescaled reference profiles (lostgenes included with Beta =1): ")
+      anchors_second <- find_anchor_cells(counts = counts[, sharedgenes], 
                                           neg = neg, 
                                           bg = bg, 
-                                          profiles = outs[['rescale_res']][['rescaled_profiles']], 
+                                          profiles = outs[['updated_profiles']][sharedgenes, ], 
                                           size = nb_size, 
                                           n_cells = n_anchor_cells, 
                                           min_cosine = min_anchor_cosine, 
@@ -217,11 +219,11 @@ updateReferenceProfiles <-
       outs[['refit_res']] <- list(refitted_profiles = refitted_profiles, 
                                   anchors = anchors)
       outs[['updated_profiles']] <- refitted_profiles
-      outs[['blacklist']] <- blacklist
+      
     }
     
+    outs[['blacklist']] <- blacklist
     outs[['anchors']] <- anchors
-    
     
     return(outs)
   }
@@ -288,7 +290,7 @@ updateProfilesFromAnchors <-
 #'     \item{platformEff_statsDF}{a data.frame for statistics on platform effect estimation with genes in rows and columns for `Gene`, `Beta`, `beta_SE`.}
 #'     \item{anchors}{a named vector of anchors used for platform effect estimation}
 #'     \item{blacklist}{a vector of genes excluded from cell typing, including both outliers identified in platform effect estimation and the user-defined genes}
-#'     \item{lostgenes}{a vector of genes excluded from platform effect estiamtion and the returned `rescaled_profiles`}
+#'     \item{lostgenes}{a vector of genes excluded from platform effect estiamtion due to insufficient evidence}
 #' }
 #' @description The general workflow would be: (1) extract the anchor cells from input; 
 #' (2) Run poisson regression with anchor cells; (3) Filter user defined genes(if any) 
@@ -314,32 +316,61 @@ estimatePlatformEffects <-
     if(length(anchors)<1){
       stop("The provided non-NA `anchors` are either not present in `counts` or have no shared cell types with `profiles`, check if missing names for cell_id in `anchors`.") 
     }
+    cts_to_check <- unique(anchors)
     
-    # focus on shared genes and non-zero genes
+    # focus on shared genes 
     count_data <- alignGenes(counts = counts[names(anchors), ], 
                              profiles = profiles)
     # expanded cell types * genes matrix 
     reference_data <- Matrix::t(profiles[colnames(count_data), unname(anchors)])
     
-    bad_genes <- (Matrix::colSums(count_data)==0 | Matrix::colSums(reference_data)==0)
-    if(sum(bad_genes)>0){
-      lostgenes <- colnames(count_data)[bad_genes]
-      message(paste0("The following ", sum(bad_genes), 
-                     " genes with zero counts in anchor cells or reference of corresponding cell types, are excluded from platform effect estimation: ", 
-                     paste0(lostgenes, collapse = ",")))
-      
-      count_data <- count_data[,!bad_genes, drop = F]
-      reference_data <- reference_data[,!bad_genes, drop = F]
-    } else {
+    ## group shared genes based on their expression level in obs vs. ref
+    # (1) ok ref & above-zero obs, evaluate in glm; 
+    # (2) ok ref but near-zero obs, add to blacklist as outliers; 
+    # (3) near-zero ref but high obs, add to blacklist as outliers;
+    # (4) near-zero ref but low obs, add to lostgenes. 
+    netCount_data <- sweep(count_data, 1, bg[names(anchors)], "-")
+    geneDF <- data.frame(
+      Gene = colnames(count_data), 
+      Ref_maxAll = apply(profiles[colnames(count_data), cts_to_check, drop = F], 1, max, na.rm = T),
+      NetCount_maxAll = apply(netCount_data, 2, max, na.rm = T),
+      NetCount_maxPerCT = sapply(aggregate(netCount_data, by = list(unname(anchors)), mean, na.rm = T)[, -1], max, na.rm = T)
+    )
+    rm(netCount_data)
+    
+    # ok ref > 0.5* median(ref of all anchor cell types)
+    geneDF[['ok_ref']] <- (geneDF[['Ref_maxAll']] > 0.5* median(profiles[colnames(count_data), cts_to_check, drop = F], na.rm = T))
+    # positive obs, max (net of all) >=1
+    geneDF[['pos_net']] <- (geneDF[['NetCount_maxAll']] >= 1)
+    # high obs, max(average per cell type) >=2
+    geneDF[['high_net']] <- (geneDF[['NetCount_maxPerCT']] >= 2)
+    
+    # lostgenes: insufficient evidence for evaluation 
+    lostgenes <- geneDF$Gene[!(geneDF$ok_ref | geneDF$high_net)]
+    if(length(lostgenes)>0){
+      message(paste0(length(lostgenes), " genes with low expression in both `counts` and `profiles` are excluded from platform estimation."))
+    }else{
       lostgenes <- NULL
     }
     
+    # blacklist with contradictory trend
+    blacklist_addon <- geneDF$Gene[(geneDF$ok_ref & !geneDF$pos_net) | (!geneDF$ok_ref & geneDF$high_net)]
+    if(length(blacklist_addon)>0){
+      message(paste0(length(blacklist_addon), " genes with contradictory trend are appended to `blacklist`. "))
+      blacklist <- unique(c(blacklist, blacklist_addon))
+    }
+    
+    # genes for evaluation 
+    use_genes <- geneDF$Gene[geneDF$ok_ref & geneDF$pos_net]
+    count_data <- count_data[,use_genes, drop = F]
+    reference_data <- reference_data[,use_genes, drop = F]
+
     if(ncol(count_data)<1){
-      stop("No shared genes in `anchors` with `counts` above zero.")
+      stop("No shared genes with sufficient count for platform evaluation.")
     }
     
     # fast conversion to data.frame for glm
-    count_vector <- { dt = data.table::melt(data.table::data.table(count_data, keep.rownames = TRUE) , id.vars = c("rn"))} 
+    count_vector <- data.table::melt(data.table::data.table(count_data, keep.rownames = TRUE) , id.vars = c("rn"))
     colnames(count_vector) <- c("Cell_ID","Gene","Counts")
     
     reference_vector <- data.table::melt(data.table::data.table(reference_data, keep.rownames = TRUE) , id.vars = c("rn"))
@@ -368,7 +399,10 @@ estimatePlatformEffects <-
     
     ### Step3: Filtering genes with extreme betas, outside [0.01, 100] and pre-specified by the user
     blacklist_addon <- as.vector(PlatformEff$Gene[PlatformEff$Beta < 0.01 | PlatformEff$Beta > 100])
-    blacklist <- unique(c(blacklist,blacklist_addon))
+    if(length(blacklist_addon)>0){
+      message(paste0(length(blacklist_addon), " genes with extreme beta are appended to `blacklist`. "))
+      blacklist <- unique(c(blacklist, blacklist_addon))
+    }
     genes_to_keep <- as.vector(PlatformEff$Gene[!(PlatformEff$Gene %in%blacklist)])
     
     ### Step4: Rescale the raw reference profile
