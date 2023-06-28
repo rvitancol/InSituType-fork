@@ -42,7 +42,7 @@ A list with three elements:
 \description{
 The general workflow would be: (1) extract the anchor cells from input; 
 (2) Run poisson regression with anchor cells; (3) Filter user defined genes(if any) 
-and genes with negative betas; (4) Re-scale Profile with Beta estimates.
+and genes with extreme betas, outside [0.01, 100]; (4) Re-scale Profile with Beta estimates.
 }
 \details{
 Calculates gene-wise scaling factor between reference profiles and the observed profiles of the provided anchors.

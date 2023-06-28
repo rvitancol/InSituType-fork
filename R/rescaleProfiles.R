@@ -292,7 +292,7 @@ updateProfilesFromAnchors <-
 #' }
 #' @description The general workflow would be: (1) extract the anchor cells from input; 
 #' (2) Run poisson regression with anchor cells; (3) Filter user defined genes(if any) 
-#' and genes with negative betas; (4) Re-scale Profile with Beta estimates. 
+#' and genes with extreme betas, outside [0.01, 100]; (4) Re-scale Profile with Beta estimates. 
 #' @importFrom data.table data.table melt
 #' @importFrom Matrix colSums t rowSums
 #' @importFrom parallel mclapply
@@ -366,8 +366,8 @@ estimatePlatformEffects <-
     rownames(PlatformEff) <- PlatformEff$Gene
     
     
-    ### Step3: Filtering genes with negative betas and pre-specified by the user
-    blacklist_addon <- as.vector(PlatformEff$Gene[PlatformEff$Beta<0])
+    ### Step3: Filtering genes with extreme betas, outside [0.01, 100] and pre-specified by the user
+    blacklist_addon <- as.vector(PlatformEff$Gene[PlatformEff$Beta < 0.01 | PlatformEff$Beta > 100])
     blacklist <- unique(c(blacklist,blacklist_addon))
     genes_to_keep <- as.vector(PlatformEff$Gene[!(PlatformEff$Gene %in%blacklist)])
     
