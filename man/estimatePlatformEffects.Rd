@@ -5,18 +5,15 @@
 \title{Platform effect adjustment on reference profiles based on the expression profiles of anchors}
 \usage{
 estimatePlatformEffects(
-  profiles,
   counts,
   neg,
   bg = NULL,
   anchors,
+  profiles,
   blacklist = NULL
 )
 }
 \arguments{
-\item{profiles}{Matrix of reference profiles holding mean expression of genes x cell types. 
-Input linear-scale expression, with genes in rows and cell types in columns.}
-
 \item{counts}{Counts matrix, cells * genes.}
 
 \item{neg}{Vector of mean negprobe counts per cell}
@@ -26,6 +23,9 @@ Input linear-scale expression, with genes in rows and cell types in columns.}
 \item{anchors}{Vector giving "anchor" cell types, for use in semi-supervised
 clustering. Vector elements will be mainly NA's (for non-anchored cells)
 and cell type names for cells to be held constant throughout iterations.}
+
+\item{profiles}{Matrix of reference profiles holding mean expression of genes x cell types. 
+Input linear-scale expression, with genes in rows and cell types in columns.}
 
 \item{blacklist}{vector of user-defined genes to be excluded for cell typing (default = NULL)}
 }

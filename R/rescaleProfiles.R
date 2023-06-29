@@ -146,14 +146,15 @@ updateReferenceProfiles <-
     
     outs <- list()
     
+    
     ## step 2: rescale profiles for platform effect based on high confidence of anchors
     if(rescale){
       message("Rescale reference profiles for platform effect.")
-      outs[['rescale_res']] <- estimatePlatformEffects(counts[, sharedgenes], 
+      outs[['rescale_res']] <- estimatePlatformEffects(counts = counts[, sharedgenes], 
                                                        neg = neg, 
                                                        bg = bg, 
-                                                       profiles = reference_profiles[sharedgenes, ], 
-                                                       anchors = anchors)
+                                                       anchors = anchors,
+                                                       profiles = reference_profiles[sharedgenes, ])
       
       # add outliers from platform effect estimation, but exclude lostgenes
       blacklist <- unique(c(blacklist, outs[['rescale_res']][['blacklist']]))
@@ -275,14 +276,14 @@ updateProfilesFromAnchors <-
 #' Platform effect adjustment on reference profiles based on the expression profiles of anchors 
 #' 
 #' Calculates gene-wise scaling factor between reference profiles and the observed profiles of the provided anchors.
-#' @param profiles Matrix of reference profiles holding mean expression of genes x cell types. 
-#'  Input linear-scale expression, with genes in rows and cell types in columns.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
 #' @param bg Expected background
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
 #'   and cell type names for cells to be held constant throughout iterations.
+#' @param profiles Matrix of reference profiles holding mean expression of genes x cell types. 
+#'  Input linear-scale expression, with genes in rows and cell types in columns.
 #' @param blacklist vector of user-defined genes to be excluded for cell typing (default = NULL)
 #' @return A list with three elements: 
 #' \describe{
@@ -296,16 +297,16 @@ updateProfilesFromAnchors <-
 #' (2) Run poisson regression with anchor cells; (3) Filter user defined genes(if any) 
 #' and genes with extreme betas, outside [0.01, 100]; (4) Re-scale Profile with Beta estimates. 
 #' @importFrom data.table data.table melt
-#' @importFrom Matrix colSums t rowSums
+#' @importFrom Matrix t rowSums
 #' @importFrom parallel mclapply
 #' @importFrom stats glm poisson
 #' @export
 estimatePlatformEffects <- 
-  function(profiles,
-           counts,
+  function(counts,
            neg, 
            bg=NULL, 
            anchors, 
+           profiles,
            blacklist=NULL){
     
     #### Step1: clean up and prepare inputs, foucs on anchors only
@@ -321,22 +322,26 @@ estimatePlatformEffects <-
     # focus on shared genes 
     count_data <- alignGenes(counts = counts[names(anchors), ], 
                              profiles = profiles)
-    # expanded cell types * genes matrix 
-    reference_data <- Matrix::t(profiles[colnames(count_data), unname(anchors)])
     
     ## group shared genes based on their expression level in obs vs. ref
     # (1) ok ref & above-zero obs, evaluate in glm; 
     # (2) ok ref but near-zero obs, add to blacklist as outliers; 
     # (3) near-zero ref but high obs, add to blacklist as outliers;
     # (4) near-zero ref but low obs, add to lostgenes. 
-    netCount_data <- sweep(count_data, 1, bg[names(anchors)], "-")
+    
+    # dense array for net count, high memory consumption  
+    netCount_data <- apply(sweep(as.matrix(count_data), 1, bg[names(anchors)], "-"), 2, pmax, 0)
+    netAvg_perCT <- aggregate(netCount_data, by = list(unname(anchors)), mean, na.rm = T)
+    gc()
+    
     geneDF <- data.frame(
       Gene = colnames(count_data), 
       Ref_maxAll = apply(profiles[colnames(count_data), cts_to_check, drop = F], 1, max, na.rm = T),
       NetCount_maxAll = apply(netCount_data, 2, max, na.rm = T),
-      NetCount_maxPerCT = sapply(aggregate(netCount_data, by = list(unname(anchors)), mean, na.rm = T)[, -1], max, na.rm = T)
+      NetCount_maxPerCT = sapply(netAvg_perCT[, -1], max, na.rm = T)
     )
-    rm(netCount_data)
+    rm(netCount_data, netAvg_perCT)
+    gc()
     
     # ok ref > 0.5* median(ref of all anchor cell types)
     geneDF[['ok_ref']] <- (geneDF[['Ref_maxAll']] > 0.5* median(profiles[colnames(count_data), cts_to_check, drop = F], na.rm = T))
@@ -363,17 +368,18 @@ estimatePlatformEffects <-
     # genes for evaluation 
     use_genes <- geneDF$Gene[geneDF$ok_ref & geneDF$pos_net]
     count_data <- count_data[,use_genes, drop = F]
-    reference_data <- reference_data[,use_genes, drop = F]
-
     if(ncol(count_data)<1){
       stop("No shared genes with sufficient count for platform evaluation.")
     }
     
+    
     # fast conversion to data.frame for glm
-    count_vector <- data.table::melt(data.table::data.table(count_data, keep.rownames = TRUE) , id.vars = c("rn"))
+    count_vector <- data.table::melt(data.table::data.table(as.matrix(count_data), keep.rownames = TRUE) , id.vars = c("rn"))
     colnames(count_vector) <- c("Cell_ID","Gene","Counts")
     
-    reference_vector <- data.table::melt(data.table::data.table(reference_data, keep.rownames = TRUE) , id.vars = c("rn"))
+    # expanded cell types * genes matrix 
+    reference_data <- Matrix::t(profiles[colnames(count_data), unname(anchors)])
+    reference_vector <- data.table::melt(data.table::data.table(as.matrix(reference_data), keep.rownames = TRUE) , id.vars = c("rn"))
     colnames(reference_vector) <- c("Cell_Type","Gene","Reference")
     
     ### Step2: Run poisson regression with link being Identity to estimate gene-level platform effect based on selected anchor cells
