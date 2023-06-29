@@ -341,8 +341,8 @@ refineAnchors <- function(counts,
   }
   
   # net expression profiles of anchor candidates, cell x gene 
-  netExpr <- pmax(sweep(counts[cells_to_use, ], 1, bg[cells_to_use], "-"), 0)
-  netExpr <- as.matrix(netExpr)[, Matrix::colSums(netExpr)>0]
+  netExpr <- apply(sweep(as.matrix(counts[cells_to_use, , drop = F]), 1, bg[cells_to_use], "-"), 2, pmax, 0)
+  netExpr <- netExpr[, Matrix::colSums(netExpr)>0, drop = F]
   
   sharedgenes <- intersect(rownames(profiles), colnames(netExpr))
   
