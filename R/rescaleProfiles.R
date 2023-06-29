@@ -171,7 +171,7 @@ updateReferenceProfiles <-
     
     
     ## step 3: second around of anchor selection based on corrected profiles
-    if (rescale & refit){
+    if (rescale && refit){
       message("Second round of anchor selection given the rescaled reference profiles (lostgenes included with Beta =1): ")
       anchors_second <- find_anchor_cells(counts = counts[, sharedgenes], 
                                           neg = neg, 
@@ -309,7 +309,7 @@ estimatePlatformEffects <-
            profiles,
            blacklist=NULL){
     
-    #### Step1: clean up and prepare inputs, foucs on anchors only
+    #### Step1: clean up and prepare inputs, focus on anchors only
     bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
     # non-NA anchors 
     anchors <- anchors[!is.na(anchors)]
@@ -398,7 +398,10 @@ estimatePlatformEffects <-
                         beta_SE=summary(GLM_Fit)$coefficients["Reference:Cell_SF","Std. Error"]))
     }
     
-    PlatformEff <- parallel::mclapply(colnames(count_data), PlatformEstimator, mc.cores = numCores())
+    PlatformEff <- parallel::mclapply(use_genes, PlatformEstimator, 
+                                      mc.cores = numCores(percentCores =
+                                                            ifelse(length(use_genes)>1000,
+                                                                   yes = 0.25, no = 0.75)))
     PlatformEff <- as.data.frame(do.call(rbind, PlatformEff))
     rownames(PlatformEff) <- PlatformEff$Gene
     

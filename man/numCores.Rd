@@ -4,7 +4,12 @@
 \alias{numCores}
 \title{Get number of cores for parallelized operations}
 \usage{
-numCores()
+numCores(percentCores = 0.9, minNotUsedCores = 2)
+}
+\arguments{
+\item{percentCores}{percent of cores to use for parallelization [0-1]}
+
+\item{minNotUsedCores}{minimum number of cores to leave for background processes}
 }
 \value{
 number of cores to use for mclapply

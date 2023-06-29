@@ -323,7 +323,7 @@ refineAnchors <- function(counts,
   cells_to_use <- intersect(cells_to_use, rownames(counts))
   cts <- intersect(unique(anchor_candidates[cells_to_use]), colnames(profiles))
   
-  if(length(cells_to_use)<20 | length(cts)<3){
+  if(length(cells_to_use)<20 || length(cts)<3){
     stop(sprintf("Only %d anchor candidates for %d cell types shared among `anchor_candidates`, `counts` and `profiles`. Must have at least 20 candidates for 3 cell types to use the projection based filtering.", 
                  length(cells_to_use), length(cts)))
   } else {
