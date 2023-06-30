@@ -29,7 +29,9 @@ Imports:
   stats,
   utils,
   Rcpp (>= 1.0.9),
-  uwot
+  uwot,
+  parallel, 
+  fastglm
 License: NanoString Technologies, Inc. Software License Agreement for Non-Commercial Use
 Encoding: UTF-8
 LazyData: true

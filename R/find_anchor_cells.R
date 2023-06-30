@@ -261,7 +261,7 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
   
   # select anchors based on stats:
   # double number for candidates if do further refinement
-  anchor_candidates <- choose_anchors_from_stats(counts = counts, 
+  anchors <- choose_anchors_from_stats(counts = counts, 
                                        neg = neg,
                                        bg = bg,
                                        anchorstats = anchorstats, 
@@ -272,20 +272,18 @@ find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                                        min_scaled_llr = min_scaled_llr, 
                                        insufficient_anchors_thresh = insufficient_anchors_thresh) 
   
-  if(!refinement){
-    return(anchor_candidates)
-  } else {
+  if(refinement){
     # refine anchors via projection:
     anchors <- refineAnchors(counts = counts, 
                              neg = neg, bg = bg, 
                              align_genes =  FALSE,
                              profiles = profiles, 
-                             anchor_candidates = anchor_candidates, 
+                             anchor_candidates = anchors, 
                              nn_cells = n_cells,
                              insufficient_anchors_thresh = insufficient_anchors_thresh)
-    return(anchors)
+    
   }
-
+  return(anchors)
 }
 
 

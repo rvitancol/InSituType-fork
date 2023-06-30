@@ -299,7 +299,6 @@ updateProfilesFromAnchors <-
 #' @importFrom data.table data.table melt
 #' @importFrom Matrix t rowSums
 #' @importFrom parallel mclapply
-#' @importFrom stats glm poisson
 #' @export
 estimatePlatformEffects <- 
   function(counts,
@@ -314,10 +313,15 @@ estimatePlatformEffects <-
     # non-NA anchors 
     anchors <- anchors[!is.na(anchors)]
     anchors <- anchors[(anchors %in% colnames(profiles)) & (names(anchors) %in% rownames(counts))]
-    if(length(anchors)<1){
-      stop("The provided non-NA `anchors` are either not present in `counts` or have no shared cell types with `profiles`, check if missing names for cell_id in `anchors`.") 
-    }
     cts_to_check <- unique(anchors)
+    
+    if(length(anchors)<20 || length(cts_to_check)<3){
+      stop(sprintf("Only %d anchor for %d cell types shared among `counts` and `profiles`, check if missing names for cell_id in `anchors`.", 
+                   length(anchors), length(cts_to_check)))
+    } else {
+      message(sprintf("Estimate platform effect given %d anchor across %d cell types.", 
+                      length(anchors), length(cts_to_check)))
+    }
     
     # focus on shared genes 
     count_data <- alignGenes(counts = counts[names(anchors), ], 
@@ -330,15 +334,17 @@ estimatePlatformEffects <-
     # (4) near-zero ref but low obs, add to lostgenes. 
     
     # dense array for net count, high memory consumption  
-    netCount_data <- apply(sweep(as.matrix(count_data), 1, bg[names(anchors)], "-"), 2, pmax, 0)
-    netAvg_perCT <- aggregate(netCount_data, by = list(unname(anchors)), mean, na.rm = T)
+    netCount_data <- pmax(count_data - bg[names(anchors)], 0)
+    netAvg_perCT <- sapply(cts_to_check, function(ct){
+      Matrix::colMeans(netCount_data[anchors == ct, , drop = F], na.rm = T)
+    })
     gc()
     
     geneDF <- data.frame(
       Gene = colnames(count_data), 
       Ref_maxAll = apply(profiles[colnames(count_data), cts_to_check, drop = F], 1, max, na.rm = T),
       NetCount_maxAll = apply(netCount_data, 2, max, na.rm = T),
-      NetCount_maxPerCT = sapply(netAvg_perCT[, -1], max, na.rm = T)
+      NetCount_maxPerCT = apply(netAvg_perCT, 1, max, na.rm = T)
     )
     rm(netCount_data, netAvg_perCT)
     gc()
@@ -388,20 +394,48 @@ estimatePlatformEffects <-
     # cell level scaling factor between obs vs. reference 
     query_DF[['Cell_SF']] <- Matrix::rowSums(count_data)/Matrix::rowSums(reference_data)
     
+    # split by gene
+    query_DF <- split(query_DF, query_DF$Gene)
     
-    PlatformEstimator <- function(gene_ID){
-      GLM_Fit<- stats::glm(Counts ~  Reference :  Cell_SF + offset(BG) -1 , family= stats::poisson(link = "identity"),
-                           data=query_DF[query_DF$Gene==gene_ID,],start=c(0))
-      
-      return(data.frame(Gene=gene_ID,
+    # fastglm estimation first, then glm for failed ones 
+    percentCores <- 0.25
+    PlatformEstimator_fastGLM <- function(df){
+      GLM_Fit<- fastglm::fastglm(x = model.matrix(~Reference : Cell_SF -1, data = df), 
+                                 y = df$Counts, offset = df$BG, 
+                                 family= stats::poisson(link = "identity"),
+                                 start=c(0))
+      return(data.frame(Gene=df$Gene[1],
                         Beta=GLM_Fit$coefficients["Reference:Cell_SF"],
                         beta_SE=summary(GLM_Fit)$coefficients["Reference:Cell_SF","Std. Error"]))
     }
+    PlatformEff <- parallel::mclapply(query_DF, PlatformEstimator_fastGLM, 
+                                      mc.cores = numCores(percentCores =percentCores))
     
-    PlatformEff <- parallel::mclapply(use_genes, PlatformEstimator, 
-                                      mc.cores = numCores(percentCores =
-                                                            ifelse(length(use_genes)>1000,
-                                                                   yes = 0.25, no = 0.75)))
+    warning_genes <- (sapply(PlatformEff, class) != "data.frame")
+    if(sum(warning_genes)>0){
+      PlatformEff <- PlatformEff[!warning_genes]
+      
+      PlatformEstimator_glm <- function(df){
+        GLM_Fit<- stats::glm(Counts ~  Reference :  Cell_SF + offset(BG) -1 , 
+                             family= stats::poisson(link = "identity"),
+                             data=df,start=c(0))
+        return(data.frame(Gene=df$Gene[1],
+                          Beta=GLM_Fit$coefficients["Reference:Cell_SF"],
+                          beta_SE=summary(GLM_Fit)$coefficients["Reference:Cell_SF","Std. Error"]))
+      }
+      res2 <- parallel::mclapply(query_DF[warning_genes], PlatformEstimator_glm, 
+                                 mc.cores = numCores(percentCores =percentCores))
+      
+      warning_genes <- (sapply(res2, class) != "data.frame")
+      PlatformEff <- c(PlatformEff, res2[!warning_genes])
+      rm(res2)
+    }
+    
+    # give warnings for estimation error
+    if(sum(warning_genes)>0){
+      message(paste0(sum(warning_genes), " genes with error in glm fitting are appended to `lostgenes`, try set option with smaller `mc.cores`."))
+      lostgenes <- unique(c(lostgenes, names(warning_genes)[which(warning_genes)]))
+    }
     PlatformEff <- as.data.frame(do.call(rbind, PlatformEff))
     rownames(PlatformEff) <- PlatformEff$Gene
     
