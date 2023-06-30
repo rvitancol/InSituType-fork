@@ -30,7 +30,7 @@ Input linear-scale expression, with genes in rows and cell types in columns.}
 \item{blacklist}{vector of user-defined genes to be excluded for cell typing (default = NULL)}
 }
 \value{
-A list with three elements: 
+A list with five elements: 
 \describe{
     \item{rescaled_profiles}{genes * cell types Matrix of rescaled reference profiles with platform effect corrected }
     \item{platformEff_statsDF}{a data.frame for statistics on platform effect estimation with genes in rows and columns for `Gene`, `Beta`, `beta_SE`.}
