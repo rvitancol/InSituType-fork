@@ -416,6 +416,7 @@ estimatePlatformEffects <-
     if(sum(warning_genes)>0){
       message(paste0(sum(warning_genes), " genes with error in glm fitting are appended to `lostgenes`, try set option with smaller `mc.cores`."))
       lostgenes <- unique(c(lostgenes, names(warning_genes)[which(warning_genes)]))
+      PlatformEff <- PlatformEff[!warning_genes]
     }
     PlatformEff <- as.data.frame(do.call(rbind, PlatformEff))
     rownames(PlatformEff) <- PlatformEff$Gene
