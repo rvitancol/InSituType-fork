@@ -30,6 +30,9 @@ estimateBackground <- function(counts, neg, bg = NULL){
     names(bg) <- rownames(counts)
   }
   
+  # overwrite if non-positive bg
+  bg[bg <=0] <- min(1e-5, bg[bg>0])
+  
   return(bg)
   
 }

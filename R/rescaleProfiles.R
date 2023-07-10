@@ -309,8 +309,6 @@ estimatePlatformEffects <-
     
     #### Step1: clean up and prepare inputs, focus on anchors only
     bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
-    # overwrite if non-positive bg
-    bg[bg <=0] <- min(1e-5, bg[bg>0])
     # non-NA anchors 
     anchors <- anchors[!is.na(anchors)]
     anchors <- anchors[(anchors %in% colnames(profiles)) & (names(anchors) %in% rownames(counts))]
