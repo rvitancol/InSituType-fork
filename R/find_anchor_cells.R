@@ -259,7 +259,6 @@ choose_anchors_from_stats <-
 #'   this many anchors will be discarded.
 #' @return A vector holding anchor cell assignments (or NA) for each cell in the
 #'   counts matrix
-#' @importFrom lsa cosine
 #' @export
 #' @examples 
 #' data("ioprofiles")
