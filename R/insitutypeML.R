@@ -43,39 +43,13 @@ NULL
   }
   
   # get vector of expected background:
-  if (is.null(bg) && is.null(neg)) {
-    stop("Must provide either bg or neg")
-  }
-  # infer bg from neg if needed
-  if (is.null(bg) && !is.null(neg)) {
-      s <- Matrix::rowMeans(x)
-      bgmod <- stats::lm(neg ~ s - 1)
-      bg <- bgmod$fitted
-      names(bg) <- rownames(x)
-  }
-  # accept a single value of bg if input by user:
-  if (length(bg) == 1) {
-    bg <- rep(bg, nrow(x))
-    names(bg) <- rownames(x)
-  }
+  bg <- estimateBackground(counts = x, neg = neg, bg = bg)
   
   # align genes:
   if (align_genes) {
-    sharedgenes <- intersect(rownames(reference_profiles), colnames(x))
-    lostgenes <- setdiff(colnames(x), rownames(reference_profiles))
-    
-    # subset:
-    x <- x[, sharedgenes]
-    reference_profiles <- reference_profiles[sharedgenes, ]
-    
-    # warn about genes being lost:
-    if ((length(lostgenes) > 0) && length(lostgenes) < 50) {
-      message(paste0("The following genes in the count data are missing from reference_profiles and will be omitted from cell typing: ",
-                     paste0(lostgenes, collapse = ",")))
-    }
-    if (length(lostgenes) > 50) {
-      message(paste0(length(lostgenes), " genes in the count data are missing from reference_profiles and will be omitted from cell typing"))
-    }
+    x <- alignGenes(counts = x, profiles = reference_profiles)
+    reference_profiles <- reference_profiles[colnames(x), ]
+
   }
   
   # prep cohort vector:

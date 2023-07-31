@@ -13,7 +13,12 @@ updateReferenceProfiles(
   anchors = NULL,
   n_anchor_cells = 2000,
   min_anchor_cosine = 0.3,
-  min_anchor_llr = 0.01
+  min_anchor_llr = 0.01,
+  insufficient_anchors_thresh = 20,
+  refinement = FALSE,
+  blacklist = NULL,
+  rescale = FALSE,
+  refit = TRUE
 )
 }
 \arguments{
@@ -27,9 +32,10 @@ updateReferenceProfiles(
 
 \item{nb_size}{The size parameter to assume for the NB distribution.}
 
-\item{anchors}{Vector giving "anchor" cell types, for use in semi-supervised
-clustering. Vector elements will be mainly NA's (for non-anchored cells)
-and cell type names for cells to be held constant throughout iterations.}
+\item{anchors}{named vector giving "anchor" cell types with cell_id in names, 
+for use in semi-supervised clustering. Vector elements will be mainly NA's 
+(for non-anchored cells) and cell type names for cells to be held constant 
+throughout iterations.}
 
 \item{n_anchor_cells}{For semi-supervised learning. Maximum number of anchor
 cells to use for each cell type.}
@@ -41,13 +47,33 @@ anchor.}
 \item{min_anchor_llr}{For semi-supervised learning. Cells must have
 (log-likelihood ratio / totalcounts) above this threshold to be used as an
 anchor}
+
+\item{insufficient_anchors_thresh}{Cell types that end up with fewer than
+this many anchors will be discarded.}
+
+\item{refinement}{Logical, flag for further anchor refinement via UMAP projection (default = FALSE)}
+
+\item{blacklist}{vector of genes to be excluded for cell typing (default = NULL)}
+
+\item{rescale}{Logical, flag for platform effect correction (default = FALSE)}
+
+\item{refit}{Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)}
 }
 \value{
-updated reference profiles
+a list 
+\describe{
+    \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
+    \item{blacklist}{a vector of genes excluded from the final updated reference profiles}
+    \item{anchors}{a named vector for final anchors used for reference profile update}
+    \item{rescale_res}{a list of 5 elements, `rescaled_profiles`, `platformEff_statsDF`, `anchors`, `blacklist` and `lostgenes`, for platform effect correction outputs, return when rescale = TRUE}
+    \item{refit_res}{a list of 2 elements, `refitted_profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
+}
 }
 \description{
 Update reference profiles using pre-specified anchor cells, or if no anchors
-are specified, by first choosing anchor cells
+are specified, by first choosing anchor cells. Option to return reference 
+profiles rescaled for platform effect and/or to return further refitted profiles 
+based on the observed profiles of anchor cells.
 }
 \examples{
 data("mini_nsclc")

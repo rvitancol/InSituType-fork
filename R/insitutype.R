@@ -89,6 +89,9 @@
 #'   anchor
 #' @param insufficient_anchors_thresh Cell types that end up with fewer than
 #'   this many anchors after anchor selection will be discarded.
+#' @param refinement Logical, flag for further anchor refinement, used when update_reference_profiles = TRUE (default = FALSE)
+#' @param rescale Logical, flag for platform effect correction, used when update_reference_profiles = TRUE (default = FALSE)
+#' @param refit Logical, flag for fitting reference profiles to anchors, used when update_reference_profiles = TRUE (default = TRUE)
 #' @param ... For the \linkS4class{SingleCellExperiment} method, additional
 #'   arguments to pass to the ANY method.
 #' @param assay.type A string specifying which assay values to use.
@@ -121,30 +124,33 @@ NULL
 #' @importFrom Matrix colSums
 #' @importFrom Matrix t
 .insitutype <- function(x,
-                       neg,
-                       bg = NULL,
-                       anchors = NULL,
-                       cohort = NULL,
-                       n_clusts,
-                       reference_profiles = NULL,
-                       update_reference_profiles = TRUE,
-                       sketchingdata = NULL,
-                       align_genes = TRUE,
-                       nb_size = 10,
-                       init_clust = NULL,
-                       n_starts = 10,
-                       n_benchmark_cells = 10000,
-                       n_phase1 = 10000,
-                       n_phase2 = 20000,
-                       n_phase3 = 100000,
-                       n_chooseclusternumber = 2000,
-                       pct_drop = 1 / 10000,
-                       min_prob_increase = 0.05,
-                       max_iters = 40,
-                       n_anchor_cells = 2000,
-                       min_anchor_cosine = 0.3,
-                       min_anchor_llr = 0.03,
-                       insufficient_anchors_thresh = 20) {
+                        neg,
+                        bg = NULL,
+                        anchors = NULL,
+                        cohort = NULL,
+                        n_clusts,
+                        reference_profiles = NULL,
+                        update_reference_profiles = TRUE,
+                        sketchingdata = NULL,
+                        align_genes = TRUE,
+                        nb_size = 10,
+                        init_clust = NULL,
+                        n_starts = 10,
+                        n_benchmark_cells = 10000,
+                        n_phase1 = 10000,
+                        n_phase2 = 20000,
+                        n_phase3 = 100000,
+                        n_chooseclusternumber = 2000,
+                        pct_drop = 1 / 10000,
+                        min_prob_increase = 0.05,
+                        max_iters = 40,
+                        n_anchor_cells = 2000,
+                        min_anchor_cosine = 0.3,
+                        min_anchor_llr = 0.03,
+                        insufficient_anchors_thresh = 20,
+                        refinement = FALSE, 
+                        rescale = FALSE, 
+                        refit = TRUE) {
   
   
   #### preliminaries ---------------------------
@@ -153,29 +159,13 @@ NULL
     stop("Cells with 0 counts were found. Please remove.")
   }
   
-  ## get neg in condition 
-  if (is.null(names(neg))) {
-    names(neg) <- rownames(x)
-  }
-  if (length(neg) != nrow(x)) {
-    stop("length of neg should equal nrows of counts.")
-  }
+  # get vector of expected background:
+  bg <- estimateBackground(counts = x, neg = neg, bg = bg)
   
   if (is.null(cohort)) {
-    cohort <- rep("all", length(neg))
+    cohort <- rep("all", length(bg))
   }
   
-  ### infer bg if not provided: assume background is proportional to the scaling factor s
-  if (is.null(bg)) {
-    s <- Matrix::rowMeans(x)
-    bgmod <- stats::lm(neg ~ s - 1)
-    bg <- bgmod$fitted
-    names(bg) <- rownames(x)
-  }
-  if (length(bg) == 1) {
-    bg <- rep(bg, nrow(x))
-    names(bg) <- rownames(x)
-  }
   
   #### update reference profiles ----------------------------------
   fixed_profiles <- NULL
@@ -189,7 +179,11 @@ NULL
                                                anchors = anchors,
                                                n_anchor_cells = n_anchor_cells, 
                                                min_anchor_cosine = min_anchor_cosine, 
-                                               min_anchor_llr = min_anchor_llr)
+                                               min_anchor_llr = min_anchor_llr,
+                                               insufficient_anchors_thresh = insufficient_anchors_thresh, 
+                                               refinement = refinement, 
+                                               rescale = rescale, 
+                                               refit = refit)
       fixed_profiles <- update_result$updated_profiles
       anchors <- update_result$anchors
     } else {
@@ -198,23 +192,10 @@ NULL
   }
   # align the genes from fixed_profiles and counts
   if (align_genes && !is.null(fixed_profiles)) {
-    sharedgenes <- intersect(rownames(fixed_profiles), colnames(x))
-    lostgenes <- setdiff(colnames(x), rownames(fixed_profiles))
-    
-    # subset to only the shared genes:
-    x <- x[, sharedgenes]
-    fixed_profiles <- fixed_profiles[sharedgenes, ]
-    
-    # warn about genes being lost:
-    if ((length(lostgenes) > 0) && length(lostgenes < 50)) {
-      message(paste0("The following genes in the count data are missing from fixed_profiles and will be omitted from clustering: ",
-                     paste0(lostgenes, collapse = ",")))
-    }
-    if (length(lostgenes) > 50) {
-      message(paste0(length(lostgenes), " genes in the count data are missing from fixed_profiles and will be omitted from clustering"))
-    }
+    x <- alignGenes(counts = x, profiles = fixed_profiles)
+    fixed_profiles <- fixed_profiles[colnames(x), ]
   }
-
+  
   
   #### set up subsetting: ---------------------------------
   # get data for subsetting if not already provided
@@ -236,11 +217,11 @@ NULL
   
   # define sketching "Plaids" (rough clusters) for subsampling:
   plaid <- geoSketch_get_plaid(X = sketchingdata, 
-                                N = min(n_phase1, n_phase2, n_phase3, n_benchmark_cells),
-                                alpha=0.1,
-                                max_iter=200,
-                                returnBins=FALSE,
-                                minCellsPerBin = 1)
+                               N = min(n_phase1, n_phase2, n_phase3, n_benchmark_cells),
+                               alpha=0.1,
+                               max_iter=200,
+                               returnBins=FALSE,
+                               minCellsPerBin = 1)
   
   #### choose cluster number: -----------------------------
   if (!is.null(init_clust)) {
@@ -256,7 +237,7 @@ NULL
   if (length(n_clusts) > 1) {
     
     message("Selecting optimal number of clusters from a range of ", min(n_clusts), " - ", max(n_clusts))
-
+    
     chooseclusternumber_subset <- geoSketch_sample_from_plaids(Plaid = plaid, 
                                                                N = min(n_chooseclusternumber, nrow(x)))
     
@@ -287,21 +268,21 @@ NULL
     random_start_subsets <- list()
     for (i in 1:n_starts) {
       random_start_subsets[[i]] <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                                 N = min(n_phase1, nrow(x)))
+                                                                N = min(n_phase1, nrow(x)))
     }
     
     # get a vector of cells IDs to be used in comparing the random starts:
     benchmarking_subset <- geoSketch_sample_from_plaids(Plaid = plaid, 
                                                         N = min(n_benchmark_cells, nrow(x)))
-
+    
     # run nbclust from each of the random subsets, and save the profiles:
     profiles_from_random_starts <- list()
     for (i in 1:n_starts) {
-
+      
       cluster_name_pool <- c(letters, paste0(rep(letters, each = 26), rep(letters, 26)))
       tempinit <- rep(cluster_name_pool[seq_len(n_clusts)], each = ceiling(length(random_start_subsets[[i]]) / n_clusts))[
         seq_along(random_start_subsets[[i]])]
-     
+      
       profiles_from_random_starts[[i]] <- nbclust(
         counts = x[random_start_subsets[[i]], ], 
         neg = neg[random_start_subsets[[i]]], 
@@ -359,7 +340,7 @@ NULL
                     min_prob_increase = min_prob_increase,
                     max_iters = max_iters)
   tempprofiles <- clust2$profiles
- 
+  
   #### phase 3: -----------------------------------------------------------------
   message(paste0("phase 3: finalizing clusters in a ", n_phase3, " cell subset"))
   
@@ -380,7 +361,7 @@ NULL
                     max_iters = max_iters)
   profiles <- clust3$profiles
   
-
+  
   #### phase 4: -----------------------------------------------------------------
   message(paste0("phase 4: classifying all ", nrow(x), " cells"))
   
