@@ -65,6 +65,7 @@
 #' @param refit Logical, flag for fitting reference profiles to anchors, used when update_reference_profiles = TRUE (default = TRUE)
 #' @param ... For the \linkS4class{SingleCellExperiment} method, additional
 #'   arguments to pass to the ANY method.
+#' @param assay.type A string specifying which assay values to use.
 #' @importFrom stats lm
 #' @importFrom Matrix rowMeans
 #' @importFrom Matrix colSums
@@ -481,3 +482,23 @@ NULL
   
   return(out)
 }
+
+############################
+# S4 method definitions 
+############################
+
+#' @export
+#' @rdname insitutype
+setGeneric("insitutype", function(x, ...) standardGeneric("insitutype"))
+
+#' @export
+#' @rdname insitutype
+setMethod("insitutype", "ANY", .insitutype)
+
+#' @export
+#' @rdname insitutype
+#' @importFrom SummarizedExperiment assay
+#' @importFrom SingleCellExperiment SingleCellExperiment
+setMethod("insitutype", "SingleCellExperiment", function(x, ..., assay.type="counts") {
+  .insitutype(t(assay(x, i=assay.type)), ...)
+})
