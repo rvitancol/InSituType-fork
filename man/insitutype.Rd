@@ -2,15 +2,56 @@
 % Please edit documentation in R/insitutype.R
 \name{insitutype}
 \alias{insitutype}
+\alias{insitutype,ANY-method}
+\alias{insitutype,SingleCellExperiment-method}
 \title{Run insitutype.}
+\usage{
+insitutype(x, ...)
+
+\S4method{insitutype}{ANY}(
+  x,
+  neg,
+  assay_type,
+  bg = NULL,
+  anchors = NULL,
+  cohort = NULL,
+  n_clusts,
+  reference_profiles = NULL,
+  reference_sds = NULL,
+  update_reference_profiles = TRUE,
+  sketchingdata = NULL,
+  align_genes = TRUE,
+  nb_size = 10,
+  init_clust = NULL,
+  n_starts = 10,
+  n_benchmark_cells = 10000,
+  n_phase1 = 10000,
+  n_phase2 = 20000,
+  n_phase3 = 1e+05,
+  n_chooseclusternumber = 2000,
+  pct_drop = 1/10000,
+  min_prob_increase = 0.05,
+  max_iters = 40,
+  n_anchor_cells = 2000,
+  min_anchor_cosine = 0.3,
+  min_anchor_llr = 0.03,
+  insufficient_anchors_thresh = 20,
+  refinement = FALSE,
+  rescale = FALSE,
+  refit = TRUE
+)
+
+\S4method{insitutype}{SingleCellExperiment}(x, ..., assay.type = "counts")
+}
 \arguments{
-\item{counts}{Counts matrix (or dgCMatrix), cells * genes.}
+\item{...}{For the \linkS4class{SingleCellExperiment} method, additional
+arguments to pass to the ANY method.}
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
-\item{bg}{Expected background}
-
 \item{assay_type}{Assay type of RNA, protein}
+
+\item{bg}{Expected background}
 
 \item{anchors}{Vector giving "anchor" cell types, for use in semi-supervised
 clustering. Vector elements will be mainly NA's (for non-anchored cells)
@@ -96,8 +137,9 @@ this many anchors after anchor selection will be discarded.}
 
 \item{refit}{Logical, flag for fitting reference profiles to anchors, used when update_reference_profiles = TRUE (default = TRUE)}
 
-\item{...}{For the \linkS4class{SingleCellExperiment} method, additional
-arguments to pass to the ANY method.}
+\item{assay.type}{A string specifying which assay values to use.}
+
+\item{counts}{Counts matrix (or dgCMatrix), cells * genes.}
 }
 \value{
 A list, with the following elements: \enumerate{ \item clust: a
