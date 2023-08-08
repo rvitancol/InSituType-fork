@@ -8,6 +8,7 @@
 #' @param sig_mat a signature matrix of cell types. cell types x protein markers 
 #' @param cutoff a cutoff of quantile. e.g) cutoff=0.9 means that top 90 percentiles of cells are called anchors for the protein expression
 #' @param min.num.cells a minimum number of cells each cell type to estimate its mean or SDs. default value is 30.
+#' @param keep_marker_proteins whether just marker proteins from the signature matrix is kept. default value is FALSE, which returns all proteins included in the data
 #' 
 #' @return A list, with the following elements:
 #' \enumerate{
@@ -16,13 +17,13 @@
 #' \item anchors: a vector giving "anchor" cell types. Vector elements will be mainly NA's (for non-anchored cells)
 #' }
 
-gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, min.num.cells=30){
+gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, min.num.cells=30, keep_marker_proteins=FALSE){
   library(dplyr)
   library(data.table)
   if(is.null(sig_mat)){
     sig_mat = fread(paste0(system.file("extdata", package="smiProtein"), "/default_signature_matrix.csv"))
   }
-  
+  markerProteins <- intersect(colnames(sig_mat), colnames(counts_raw))
   ## Split Lineage levels into columns
   sig_mat[is.na(sig_mat)] <- 0
   sig_mat$level1 <- lapply(strsplit(sig_mat$Lineage_level, "_"), function(x){x[1]}) %>% unlist()
@@ -140,9 +141,12 @@ gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, m
     apply(exp.mat[rownames(exp.mat) %in% x, ], 2, sd )
   })
   names(protein_exp_SDs_list) <- names(marker_id_cell_type_unique)
-  
   SDs.ref.profile <- do.call("rbind", protein_exp_SDs_list) %>% t() %>% as.data.frame()
   
+  if(keep_marker_proteins){
+    mean.ref.profile <- mean.ref.profile[markerProteins, ]
+    SDs.ref.profile <- SDs.ref.profile[markerProteins, ]
+  }
   out <- list(mean.ref.profile=mean.ref.profile, SDs.ref.profile=SDs.ref.profile, anchors=anchors[rownames(exp.mat)])
   return(out)
 }
