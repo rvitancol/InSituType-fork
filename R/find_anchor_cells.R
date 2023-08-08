@@ -36,12 +36,21 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
     sds <- sds[colnames(counts), ]
   }
   
+  # # get cosine distances:
+  # cos <- matrix(NA, nrow(counts), ncol(profiles),
+  #               dimnames = list(rownames(counts), colnames(profiles)))
+  # cos <- sapply(colnames(profiles), function(cell) {
+  #   cos[, cell] <- apply(counts, 1, cosine, profiles[, cell])
+  # })
+  
   # get cosine distances:
-  cos <- matrix(NA, nrow(counts), ncol(profiles),
-                dimnames = list(rownames(counts), colnames(profiles)))
-  cos <- sapply(colnames(profiles), function(cell) {
-    cos[, cell] <- apply(counts, 1, cosine, profiles[, cell])
-  })
+  cos_numerator <- counts %*% profiles
+  counts2 <- as(counts, "dgCMatrix")
+  counts2@x <- counts2@x^2
+  rs <- sqrt(Matrix::rowSums(counts2))
+  ps <- sqrt(Matrix::colSums(profiles^2))
+  cos_denominator <- (t(t(rs))) %*% ps
+  cos <- as.matrix(cos_numerator / cos_denominator)
   
   # stats for which cells to get loglik on: 
   # get 3rd hightest cosines of each cell:
@@ -124,14 +133,7 @@ choose_anchors_from_stats <-
     if (is.null(anchorstats) && (is.null(cos) || is.null(llr))) {
       stop("Must provide either anchorstats or both cos and llr matrices.")
     }
-    use <- (anchors == cell) & !is.na(anchors)
-    # get centroid:
-    if (!is.null(neg)) {
-      mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = neg[use], assay_type=assay_type)$profiles
-    } else {
-      mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = bg[use], assay_type=assay_type)$profiles
-    }
-    
+
     # get input:
     if (!is.null(anchorstats)) {
       cos <- anchorstats$cos
@@ -159,9 +161,9 @@ choose_anchors_from_stats <-
       use <- (anchors == cell) & !is.na(anchors)
       # get centroid:
       if (!is.null(neg)) {
-        mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = neg[use])
+        mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = neg[use], assay_type=assay_type)$profiles
       } else {
-        mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = bg[use])
+        mean_anchor_profile <- Estep(counts = counts[use, , drop = FALSE], clust = cell, neg = bg[use], assay_type=assay_type)$profiles
       }
       
       # get anchors' cosine distances from centroid:

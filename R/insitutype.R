@@ -131,8 +131,8 @@ NULL
   
   
   #### preliminaries ---------------------------
-  
-  if (any(rowSums(counts) == 0)) {
+
+  if (any(rowSums(x) == 0)) {
     stop("Cells with 0 counts were found. Please remove.")
   }
   
@@ -155,7 +155,7 @@ NULL
     if (update_reference_profiles) {
       update_result <- updateReferenceProfiles(reference_profiles=reference_profiles,
                                                reference_sds=reference_sds,
-                                               counts = counts, 
+                                               counts = x, 
                                                assay_type = assay_type,
                                                neg = neg,
                                                bg = bg,
@@ -198,18 +198,18 @@ NULL
   # (e.g., if PCA is the choice, then point to existing PCA results, and run PCA if not available
   if (!is.null(sketchingdata)) {
     # check that it's correct:
-    if (nrow(sketchingdata) != nrow(counts)) {
+    if (nrow(sketchingdata) != nrow(x)) {
       warning("counts and sketchingdata have different numbers of row. Discarding sketchingdata.")
       sketchingdata <- NULL
     }
   }
   if (is.null(sketchingdata)) {
-    sketchingdata <- prepDataForSketching(counts, assay_type=assay_type)
+    sketchingdata <- prepDataForSketching(x, assay_type=assay_type)
   }
-  n_phase1 <- min(n_phase1, nrow(counts))
-  n_phase2 <- min(n_phase2, nrow(counts))
-  n_phase3 <- min(n_phase3, nrow(counts))
-  n_benchmark_cells <- min(n_benchmark_cells, nrow(counts))
+  n_phase1 <- min(n_phase1, nrow(x))
+  n_phase2 <- min(n_phase2, nrow(x))
+  n_phase3 <- min(n_phase3, nrow(x))
+  n_benchmark_cells <- min(n_benchmark_cells, nrow(x))
   
   # define sketching "Plaids" (rough clusters) for subsampling:
   plaid <- geoSketch_get_plaid(X = sketchingdata, 
@@ -235,10 +235,10 @@ NULL
     message("Selecting optimal number of clusters from a range of ", min(n_clusts), " - ", max(n_clusts))
 
     chooseclusternumber_subset <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                               N = min(n_chooseclusternumber, nrow(counts)),
+                                                               N = min(n_chooseclusternumber, nrow(x)),
                                                                seed = NULL)
     n_clusts <- chooseClusterNumber(
-      counts = counts[chooseclusternumber_subset, ], 
+      counts = x[chooseclusternumber_subset, ], 
       neg = neg[chooseclusternumber_subset], 
       bg = bg[chooseclusternumber_subset], 
       fixed_profiles = reference_profiles,
@@ -268,9 +268,9 @@ NULL
       stop("Reference profile should be provided for Supervised running.")
       
     }else{
-      message(paste0("Supervised Case: Classifying all ", nrow(counts), " cells with the user-defined reference profiles. "))
+      message(paste0("Supervised Case: Classifying all ", nrow(x), " cells with the user-defined reference profiles. "))
       
-      out <- insitutypeML(counts = counts, 
+      out <- insitutypeML(counts = x, 
                           neg = neg, 
                           bg = bg, 
                           reference_profiles = profiles, 
@@ -384,7 +384,7 @@ NULL
     }
     
     # run nbclust, initialized with the cell type assignments derived from the previous phase's profiles
-    clust2 <- nbclust(counts = counts[phase2_sample, ], 
+    clust2 <- nbclust(counts = x[phase2_sample, ], 
                       neg = neg[phase2_sample], 
                       bg = bg[phase2_sample],
                       fixed_profiles = fixed_profiles,
