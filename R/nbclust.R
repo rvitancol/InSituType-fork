@@ -386,7 +386,6 @@ nbclust <- function(counts,
     }
     if(assay_type %in% c("Protein", "protein")){
       sds[, colnames(fixed_sds)] <- as.vector(fixed_sds)
-      sds = sweep(sds, 2, colSums(sds), "/") * 1000
     }
     
     # get cluster assignment
@@ -412,6 +411,9 @@ nbclust <- function(counts,
   }
   names(pct_changed) <- paste0("Iter_", seq_len(iter))
 
+    if(assay_type %in% c("Protein", "protein")){
+      sds = sweep(sds, 2, colSums(sds), "/") * 1000
+    }
   out <- list(clust = clust,
              probs = probs,
              profiles = sweep(profiles, 2, colSums(profiles), "/") * 1000,
