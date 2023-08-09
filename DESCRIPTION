@@ -11,22 +11,23 @@ Description: Insitutype is an algorithm for performing cell typing in single cel
              or semi-supervised cell typing in which cells both reference cell types and de novo
              clusters are fit. 
 Imports:
-  Matrix,
-  scales,
-  umap,
   ggplot2,
-  irlba,
-  mclust,
-  sparseMatrixStats,
-  SummarizedExperiment,
-  SingleCellExperiment,
-  methods,
-  rlang,
-  grDevices,
   graphics,
+  grDevices,
+  irlba,
+  lsa,
+  Matrix,
+  mclust,
+  methods,
+  Rcpp (>= 1.0.9),
+  rlang,
+  scales,
+  SingleCellExperiment,
+  sparseMatrixStats,
   stats,
-  utils,
-  Rcpp (>= 1.0.9)
+  SummarizedExperiment,
+  umap,
+  utils
 License: NanoString Technologies, Inc. Software License Agreement for Non-Commercial Use
 Encoding: UTF-8
 LazyData: true
