@@ -294,7 +294,7 @@ testthat::test_that("refineClusters works when merges and deletions are asked fo
 # test updateReferenceProfiles:
 rescaled <- updateReferenceProfiles(reference_profiles = ioprofiles, 
                                    counts = mini_nsclc$counts,
-                                   neg = mini_nsclc$neg)
+                                   neg = Matrix::rowMeans(mini_nsclc$neg))
 testthat::test_that("rescaleProfiles works as intended", {
   expect_true(is.matrix(rescaled$updated_profiles))
   expect_true(is.vector(rescaled$anchors))

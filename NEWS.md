@@ -1,3 +1,8 @@
+# InSituType 1.1.1
+
+* Support platform effect correction
+* Support anchor refinement via UMAP projection 
+
 # InSituType 1.1.0
 
 * Support matrices with more than 4B elements

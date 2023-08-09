@@ -202,14 +202,14 @@ nbclust <- function(counts, neg, bg = NULL,
 
   #### preliminaries -----------------------------------
   # infer bg if not provided: assume background is proportional to the scaling factor s
-  s <- rowSums(counts)
-  if (is.null(bg)) {
-    bgmod <- stats::lm(neg ~ s - 1)
-    bg <- bgmod$fitted
+  if (any(rowSums(counts) == 0)) {
+    stop("Cells with 0 counts were found. Please remove.")
   }
-  if (length(bg) == 1) {
-    bg <- rep(bg, nrow(counts))
-  }
+  
+  # get vector of expected background:
+  bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
+  
+
   if (!is.null(fixed_profiles)) {
     if (!identical(rownames(fixed_profiles), colnames(counts))) {
       stop("gene ids in fixed profiles and counts aren't aligned")
@@ -219,7 +219,7 @@ nbclust <- function(counts, neg, bg = NULL,
   clusterlog <- NULL
 
   if (is.null(cohort)) {
-    cohort <- rep("all", length(neg))
+    cohort <- rep("all", length(bg))
   }
   
   #### get initial profiles: ----------------------------------
@@ -241,7 +241,7 @@ nbclust <- function(counts, neg, bg = NULL,
     # derive first profiles from init_clust
     profiles <- Estep(counts = counts[!is.na(clust_old), ],
                       clust = init_clust[!is.na(clust_old)],
-                      neg = neg[!is.na(clust_old)])
+                      neg = bg[!is.na(clust_old)])
   }
   # keep fixed_profiles unchanged:
   if (length(profiles) == 0) {
@@ -275,7 +275,7 @@ nbclust <- function(counts, neg, bg = NULL,
     tempclust <- colnames(probs)[apply(probs, 1, which.max)]
     profiles <- Estep(counts = counts,
                       clust = tempclust,
-                      neg = neg)        
+                      neg = bg)        
     
     # for any profiles that have been lost, replace them with their previous version:
     lostprofiles <- setdiff(clustnames, colnames(profiles))
