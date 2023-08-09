@@ -13,6 +13,7 @@ Description: Insitutype is an algorithm for performing cell typing in single cel
              or semi-supervised cell typing in which cells both reference cell types and de novo
              clusters are fit. 
 Imports:
+  data.table,
   fastglm,
   ggplot2,
   graphics,
@@ -27,6 +28,7 @@ Imports:
   scales,
   SingleCellExperiment,
   sparseMatrixStats,
+  spatstat.geom,
   stats,
   SummarizedExperiment,
   umap,
