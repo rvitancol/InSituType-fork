@@ -44,7 +44,7 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
   # })
   
   # get cosine distances:
-  cos_numerator <- counts %*% profiles
+  cos_numerator <- counts %*% as.matrix(profiles)
   counts2 <- as(counts, "dgCMatrix")
   counts2@x <- counts2@x^2
   rs <- sqrt(Matrix::rowSums(counts2))

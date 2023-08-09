@@ -50,7 +50,7 @@ NULL
   if (align_genes) {
     x <- alignGenes(counts = x, profiles = reference_profiles)
     reference_profiles <- reference_profiles[colnames(x), ]
-
+    reference_sds <- reference_sds[colnames(x), ]
   }
   
   # prep cohort vector:
@@ -71,7 +71,7 @@ NULL
   if(assay_type %in% c("Protein", "protein")){
     # get logliks
     logliks <- lldist(x = reference_profiles,
-                      xsd=y,
+                      xsd = reference_sds,
                       mat = x,
                       bg = bg,
                       size = nb_size,
