@@ -35,23 +35,23 @@ int get_lldist_threads(const int n_profiles) {
 #endif
 
 //' sum from negative binomial density function
-//'
-//' Probability density function of the negative binomial distribution (written in C++)
-//'
-//' @param mat dgCMatrix expression counts
-//' @param bgsub vector of background expression per cell
-//' @param x numeric expression for reference profile
-//' @param bg numeric background level
-//' @param size_dnb int Dispersion parameter
-//'
-//' @return rowSums for matrix of densities
-//' @useDynLib InSituType, .registration = TRUE
-//' @importFrom Rcpp evalCpp
-//' @exportPattern "^[[:alpha:]]+" 
-//' @export
-// [[Rcpp::export]]
-Rcpp::NumericMatrix
-lls_rna(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& size_dnb) {
+ //'
+ //' Probability density function of the negative binomial distribution (written in C++)
+ //'
+ //' @param mat dgCMatrix expression counts
+ //' @param bgsub vector of background expression per cell
+ //' @param x numeric expression for reference profiles
+ //' @param bg numeric background level
+ //' @param size_dnb int Dispersion parameter
+ //'
+ //' @return rowSums for matrix of densities
+ //' @useDynLib InSituType, .registration = TRUE
+ //' @importFrom Rcpp evalCpp
+ //' @exportPattern "^[[:alpha:]]+" 
+ //' @export
+ // [[Rcpp::export]]
+ Rcpp::NumericMatrix
+fast_lldist(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& size_dnb) {
   unsigned int K = x.n_cols;
   Rcpp::NumericMatrix res(mat.n_rows, K);
 #pragma omp parallel for num_threads(get_lldist_threads(K))
@@ -75,41 +75,42 @@ lls_rna(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& s
   return res;
 }
 
-
-//' sum from gaussian density function
-//'
-//' Probability density function of the negative binomial distribution (written in C++)
-//'
-//' @param mat dgCMatrix expression counts
-//' @param x numeric expression for reference profile
-//' @param xsd numeric value for reference SD
-//' @param bg numeric background level
-//'
-//' @return rowSums for matrix of densities
-//' @useDynLib InSituType, .registration = TRUE
-//' @importFrom Rcpp evalCpp
-//' @exportPattern "^[[:alpha:]]+" 
-//' @export
-// [[Rcpp::export]]
-Rcpp::NumericMatrix
-lls_protein(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& xsd, arma::vec& bg) {
+//' sum from negative binomial density function
+ //'
+ //' Probability density function of the negative binomial distribution (written in C++)
+ //'
+ //' @param mat dgCMatrix expression counts
+ //' @param bgsub vector of background expression per cell
+ //' @param x numeric expression for reference profiles
+ //' @param xsd numeric expression for reference SD profiles
+ //' 
+ //' @return rowSums for matrix of densities
+ //' @useDynLib InSituType, .registration = TRUE
+ //' @importFrom Rcpp evalCpp
+ //' @exportPattern "^[[:alpha:]]+" 
+ //' @export
+ // [[Rcpp::export]]
+ Rcpp::NumericMatrix
+fast_lldist(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& xsd) {
   unsigned int K = x.n_cols;
   Rcpp::NumericMatrix res(mat.n_rows, K);
 #pragma omp parallel for num_threads(get_lldist_threads(K))
   for (unsigned int k = 0; k < K; k++) {
     const arma::mat::const_col_iterator col_it_begin = x.begin_col(k);
     arma::mat::const_col_iterator col_it = x.begin_col(k);
+    arma::mat::const_col_iterator xsd_iter = xsd.begin_col(k);
     const arma::mat::const_col_iterator col_it_end = x.end_col(k);
     const arma::vec s = bgsub / sum(x.col(k));
-    arma::vec::const_iterator xsd_iter = xsd.begin();
     for(; col_it != col_it_end; ++col_it) {
       arma::vec::const_iterator s_iter = s.begin();
+      //arma::vec::const_iterator bg_iter = bg.begin();
       for(; s_iter != s.end(); ++s_iter) {
         double yhat = (*s_iter) * (*col_it);
         double sd = (*s_iter) * (*xsd_iter);
         int i = s_iter - s.begin();
         int j = col_it - col_it_begin;
         res(i, k) += R::dnorm(mat(i, j), yhat, sd, 1);
+        //++bg_iter;
       }
       ++xsd_iter;
     }

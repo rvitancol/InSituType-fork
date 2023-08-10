@@ -73,7 +73,7 @@ NULL
     logliks <- lldist(x = reference_profiles,
                       xsd = reference_sds,
                       mat = x,
-                      bg = bg,
+                      bg =bg, 
                       size = nb_size,
                       assay_type=assay_type)
   }

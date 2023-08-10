@@ -51,35 +51,30 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
                               nrow(mat), length(bg))
       stop(errorMessage)
     }
-  }
-  
-  # calc scaling factor to put y on the scale of x:
-  if (is.vector(bg)) {
+    
     bgsub <- mat
     bgsub@x <- bgsub@x - bg[bgsub@i + 1]
     bgsub@x <- pmax(bgsub@x, 0)
+    bgsub <- Matrix::rowSums(bgsub)
     
-  } else {
-    bgsub <- pmax(mat - bg, 0)
-  }
-  
-  sum_of_x <- sum(x)
-  s <- Matrix::rowSums(bgsub) / sum_of_x
-  
-  # override it if s is negative:
-  s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum_of_x
-  
-  if (is.vector(bg)) {
     if(assay_type %in% c("RNA", "rna", "Rna")){
-      res <- lls_rna(mat, s, x, bg, size)
+      res <- lls_rna(mat=mat, bgsub=bgsub, x=x, bg=bg, size=size)
     }
     
     if(assay_type %in% c("Protein", "protein")){
-      res <- lls_protein(mat=mat, s=s, x=x, xsd=xsd, bg=bg)
+      res <- lls_protein(mat=mat, bgsub=bgsub, x=x, xsd=xsd)
     }
     
   }else{
     # non-optimized code used if bg is cell x gene matrix
+    bgsub <- pmax(mat - bg, 0)
+    
+    sum_of_x <- sum(x)
+    s <- Matrix::rowSums(bgsub) / sum_of_x
+    
+    # override it if s is negative:
+    s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum_of_x
+    
     if(assay_type %in% c("RNA", "rna", "Rna")){
       yhat <- s %*% t(x) + bg
       res <- stats::dnbinom(x = as.matrix(mat), size = size, mu = yhat, log = TRUE)
@@ -97,7 +92,9 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
       }
     }
   }
+
   names(res) <- rownames(mat)
+  colnames(res) <- colnames(x)
   return(round(res, digits))
 }
 
