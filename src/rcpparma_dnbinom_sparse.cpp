@@ -51,7 +51,7 @@ int get_lldist_threads(const int n_profiles) {
  //' @export
  // [[Rcpp::export]]
  Rcpp::NumericMatrix
-fast_lldist(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& size_dnb) {
+lls_rna(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& size_dnb) {
   unsigned int K = x.n_cols;
   Rcpp::NumericMatrix res(mat.n_rows, K);
 #pragma omp parallel for num_threads(get_lldist_threads(K))
@@ -91,7 +91,7 @@ fast_lldist(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, in
  //' @export
  // [[Rcpp::export]]
  Rcpp::NumericMatrix
-fast_lldist(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& xsd) {
+lls_protein(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& xsd) {
   unsigned int K = x.n_cols;
   Rcpp::NumericMatrix res(mat.n_rows, K);
 #pragma omp parallel for num_threads(get_lldist_threads(K))
