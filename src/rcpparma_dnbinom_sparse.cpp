@@ -79,7 +79,7 @@ lls_rna(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& s
  //'
  //' Probability density function of the negative binomial distribution (written in C++)
  //'
- //' @param mat dgCMatrix expression counts
+ //' @param mat dgCMatrix expression matrix
  //' @param bgsub vector of background expression per cell
  //' @param x numeric expression for reference profiles
  //' @param xsd numeric expression for reference SD profiles
@@ -91,7 +91,7 @@ lls_rna(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& s
  //' @export
  // [[Rcpp::export]]
  Rcpp::NumericMatrix
-lls_protein(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& xsd) {
+lls_protein(arma::mat& mat, arma::vec& bgsub, arma::mat& x, arma::mat& xsd) {
   unsigned int K = x.n_cols;
   Rcpp::NumericMatrix res(mat.n_rows, K);
 #pragma omp parallel for num_threads(get_lldist_threads(K))

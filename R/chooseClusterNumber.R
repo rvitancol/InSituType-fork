@@ -106,26 +106,14 @@ chooseClusterNumber <-
       max_iters = max_iters)  
 
     # get the loglik of the clustering result:
-    if(assay_type %in% c("RNA", "Rna", "rna")){
-      
-      loglik_thisclust <- parallel::mclapply(asplit(tempclust$profiles, 2),
-                                             lldist,
-                                             xsd = NULL, 
-                                             mat = counts,
-                                             bg = bg,
-                                             size = nb_size,
-                                             assay_type=assay_type,
-                                             mc.cores = numCores())
-      
-      loglik_thisclust <- do.call(cbind, loglik_thisclust)
-    }
-    
-    if(assay_type %in% c("Protein", "protein")){
-      
-      loglik_thisclust <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = nb_size, assay_type=assay_type)},
-                                    asplit(tempclust$profiles, 2), asplit(tempclust$sds, 2), mc.cores = numCores())
+    loglik_thisclust <- lldist(x = means,
+                               mat = counts,
+                               xsd = NULL,
+                               bg = bg,
+                               size = size,
+                               digits = digits,
+                               assay_type = assay_type)
 
-    }
     total_loglik_this_clust <- sum(apply(loglik_thisclust, 1, max))
     return(total_loglik_this_clust)
   })

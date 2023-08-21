@@ -16,12 +16,16 @@
 #' @param size Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA
 #' @param assay_type Assay type of RNA, protein 
 #' @param min_cosine Cells must have at least this much cosine similarity to a fixed profile to be used as an anchor.
-#' 
 #' @return A list with two elements: cos, the matrix of cosine distances;
 #'  and llr, the matrix of log likelihood ratios of each cell under each cell type vs. the 2nd best cell type.
-#' 
 #' @importFrom lsa cosine
 #' @export
+#' @examples
+#' data("ioprofiles")
+#' data("mini_nsclc")
+#' get_anchor_stats(counts = mini_nsclc$counts,
+#'                  neg = Matrix::rowMeans(mini_nsclc$neg),
+#'                  profiles = ioprofiles)
 get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                              profiles, sds, size = 10, assay_type, 
                              min_cosine = 0.3) {
@@ -35,13 +39,6 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
     profiles <- profiles[colnames(counts), ]
     sds <- sds[colnames(counts), ]
   }
-  
-  # # get cosine distances:
-  # cos <- matrix(NA, nrow(counts), ncol(profiles),
-  #               dimnames = list(rownames(counts), colnames(profiles)))
-  # cos <- sapply(colnames(profiles), function(cell) {
-  #   cos[, cell] <- apply(counts, 1, cosine, profiles[, cell])
-  # })
   
   # get cosine distances:
   cos_numerator <- counts %*% as.matrix(profiles)
@@ -116,6 +113,30 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #' @return A vector holding anchor cell assignments (or NA) for each cell in the
 #'   counts matrix
 #' @export
+#' @examples 
+#' data("ioprofiles")
+#' data("mini_nsclc")
+#' counts <- mini_nsclc$counts
+#' astats <- get_anchor_stats(counts = counts,
+#'                          neg = Matrix::rowMeans(mini_nsclc$neg),
+#'                          profiles = ioprofiles)
+#'
+#' ## estimate per-cell bg as a fraction of total counts:
+#' negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
+#' per.cell.bg <- rowSums(counts) * negmean.per.totcount
+#'
+#' # now choose anchors:
+#' choose_anchors_from_stats(counts = counts, 
+#'                           neg = Matrix::rowMeans(mini_nsclc$neg),
+#'                           bg = per.cell.bg,
+#'                           anchorstats = astats, 
+#'                           # a very low value chosen for the mini
+#'                           # dataset. Typically hundreds of cells
+#'                           # would be better.
+#'                           n_cells = 50, 
+#'                           min_cosine = 0.4, 
+#'                           min_scaled_llr = 0.03, 
+#'                           insufficient_anchors_thresh = 5)
 choose_anchors_from_stats <-
   function(counts,
            neg = NULL,
@@ -224,8 +245,15 @@ choose_anchors_from_stats <-
 #'   counts matrix
 #' @importFrom lsa cosine
 #' @export
+#' @examples 
+#' data("ioprofiles")
+#' data("mini_nsclc")
+#' sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
+#' find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], assay_type=assay_type,sds=NULL,
+#'                   neg = Matrix::rowMeans(mini_nsclc$neg),
+#'                   profiles = ioprofiles)
 find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
-                              profiles, sds=sds, size = 10, assay_type,  n_cells = 500, 
+                              profiles, sds, size = 10, assay_type,  n_cells = 500, 
                               min_cosine = 0.3, min_scaled_llr = 0.01, 
                               insufficient_anchors_thresh = 20,
                               refinement = FALSE) {

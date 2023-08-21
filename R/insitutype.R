@@ -270,7 +270,7 @@ NULL
     }else{
       message(paste0("Supervised Case: Classifying all ", nrow(x), " cells with the user-defined reference profiles. "))
       
-      out <- insitutypeML(counts = x, 
+      out <- insitutypeML(x = x, 
                           neg = neg, 
                           bg = bg, 
                           reference_profiles = profiles, 
@@ -308,12 +308,14 @@ NULL
     random_start_subsets <- list()
     for (i in 1:n_starts) {
       random_start_subsets[[i]] <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                                N = min(n_phase1, nrow(x)))
+                                                                N = min(n_phase1, nrow(x)),
+                                                                seed = NULL)
     }
     
     # get a vector of cells IDs to be used in comparing the random starts:
     benchmarking_subset <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                        N = min(n_benchmark_cells, nrow(x)))
+                                                        N = min(n_benchmark_cells, nrow(x)),
+                                                        seed = NULL)
     
     # run nbclust from each of the random subsets, and save the profiles:
     profiles_from_random_starts <- list()
@@ -321,17 +323,9 @@ NULL
     for (i in 1:n_starts) {
       
       cluster_name_pool <- c(letters, paste0(rep(letters, each = 26), rep(letters, 26)))
-      if(!is.null(reference_profiles) && n_clusts==0){ ## Supervised case
-        tempinit <- rep(cluster_name_pool[seq_len(ncol(reference_profiles))], each = ceiling(length(random_start_subsets[[i]]) / ncol(reference_profiles)))[
-          seq_along(random_start_subsets[[i]])]
-      }else{
-        tempinit <- rep(cluster_name_pool[seq_len(n_clusts)], each = ceiling(length(random_start_subsets[[i]]) / n_clusts))[
-          seq_along(random_start_subsets[[i]])]
-      }
+      tempinit <- rep(cluster_name_pool[seq_len(n_clusts)], each = ceiling(length(random_start_subsets[[i]]) / n_clusts))[
+        seq_along(random_start_subsets[[i]])]
 
-      endTime <- Sys.time()
-      print(endTime - startTime)
-      
       tempNBclust <- nbclust(
         counts = x[random_start_subsets[[i]], ], 
         neg = neg[random_start_subsets[[i]]], 
@@ -356,23 +350,13 @@ NULL
     # find which profile matrix does best in the benchmarking subset:
     benchmarking_logliks <- c()
     for (i in 1:n_starts) {
-        if(assay_type %in% c("RNA", "rna", "Rna")){
-          templogliks <- lldist(x = profiles_from_random_starts[[i]],
-                                xsd=NULL,
-                                mat = x[benchmarking_subset, ],
-                                bg = bg[benchmarking_subset],
-                                size = nb_size,
-                                assay_type=assay_type)
-        }
-
-        if(assay_type %in% c("Protein", "protein")){
-          templogliks <- lldist(x = profiles_from_random_starts[[i]],
-                                xsd=y,
-                                mat = x[benchmarking_subset, ],
-                                bg = bg[benchmarking_subset],
-                                size = nb_size,
-                                assay_type=assay_type)
-        }
+      templogliks <- lldist(x = profiles_from_random_starts[[i]],
+                            xsd = sds_from_random_starts[[i]],
+                            mat = x[benchmarking_subset, ],
+                            bg = bg[benchmarking_subset],
+                            size = nb_size,
+                            assay_type=assay_type)
+      
       # take the sum of cells' best logliks:
       benchmarking_logliks[i] <- sum(apply(templogliks, 1, max))
     }
@@ -382,25 +366,7 @@ NULL
     if(assay_type %in% c("RNA", "Rna", "rna")){
       tempsds <- NULL
     }
-    
-    # run nbclust, initialized with the cell type assignments derived from the previous phase's profiles
-    clust2 <- nbclust(counts = x[phase2_sample, ], 
-                      neg = neg[phase2_sample], 
-                      bg = bg[phase2_sample],
-                      fixed_profiles = fixed_profiles,
-                      fixed_sds = fixed_sds,
-                      cohort = cohort[phase2_sample],
-                      init_profiles = tempprofiles, 
-                      init_sds = tempsds, 
-                      init_clust = temp_init_clust, 
-                      nb_size = nb_size,
-                      assay_type=assay_type,
-                      pct_drop = 1/1000,
-                      min_prob_increase = min_prob_increase,
-                      max_iters = max_iters)
-    tempprofiles <- clust2$profiles
-    tempsds <- clust2$sds
-    
+
     rm(profiles_from_random_starts)
     rm(sds_from_random_starts)
     rm(templogliks)

@@ -12,39 +12,38 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // lls_rna
-Rcpp::NumericVector lls_rna(arma::sp_mat& mat, arma::vec& s, arma::vec& x, arma::vec& bg, int& size_dnb);
-RcppExport SEXP _InSituType_lls_rna(SEXP matSEXP, SEXP sSEXP, SEXP xSEXP, SEXP bgSEXP, SEXP size_dnbSEXP) {
+Rcpp::NumericMatrix lls_rna(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& size_dnb);
+RcppExport SEXP _InSituType_lls_rna(SEXP matSEXP, SEXP bgsubSEXP, SEXP xSEXP, SEXP bgSEXP, SEXP size_dnbSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type s(sSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type bgsub(bgsubSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type x(xSEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type bg(bgSEXP);
     Rcpp::traits::input_parameter< int& >::type size_dnb(size_dnbSEXP);
-    rcpp_result_gen = Rcpp::wrap(lls_rna(mat, s, x, bg, size_dnb));
+    rcpp_result_gen = Rcpp::wrap(lls_rna(mat, bgsub, x, bg, size_dnb));
     return rcpp_result_gen;
 END_RCPP
 }
 // lls_protein
-Rcpp::NumericVector lls_protein(arma::sp_mat& mat, arma::vec& s, arma::vec& x, arma::vec& xsd, arma::vec& bg);
-RcppExport SEXP _InSituType_lls_protein(SEXP matSEXP, SEXP sSEXP, SEXP xSEXP, SEXP xsdSEXP, SEXP bgSEXP) {
+Rcpp::NumericMatrix lls_protein(arma::mat& mat, arma::vec& bgsub, arma::mat& x, arma::mat& xsd);
+RcppExport SEXP _InSituType_lls_protein(SEXP matSEXP, SEXP bgsubSEXP, SEXP xSEXP, SEXP xsdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type s(sSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type xsd(xsdSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type bg(bgSEXP);
-    rcpp_result_gen = Rcpp::wrap(lls_protein(mat, s, x, xsd, bg));
+    Rcpp::traits::input_parameter< arma::mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type bgsub(bgsubSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type xsd(xsdSEXP);
+    rcpp_result_gen = Rcpp::wrap(lls_protein(mat, bgsub, x, xsd));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_InSituType_lls_rna", (DL_FUNC) &_InSituType_lls_rna, 5},
-    {"_InSituType_lls_protein", (DL_FUNC) &_InSituType_lls_protein, 5},
+    {"_InSituType_lls_protein", (DL_FUNC) &_InSituType_lls_protein, 4},
     {NULL, NULL, 0}
 };
 

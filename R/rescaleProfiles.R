@@ -267,7 +267,7 @@ estimatePlatformEffects <-
            bg=NULL, 
            anchors, 
            profiles,
-           sds,
+           sds=NULL,
            blacklist=NULL){
     
     #### Step1: clean up and prepare inputs, focus on anchors only
@@ -290,6 +290,7 @@ estimatePlatformEffects <-
                              profiles = profiles)
     profiles <- profiles[colnames(counts), ]
     sds <- sds[colnames(counts), ]
+    
     ## group shared genes based on their expression level in obs vs. ref
     # (1) ok ref & above-zero obs, evaluate in glm; 
     # (2) ok ref but near-zero obs, add to blacklist as outliers; 
@@ -297,7 +298,12 @@ estimatePlatformEffects <-
     # (4) near-zero ref but low obs, add to lostgenes. 
     
     # dense array for net count, high memory consumption  
-    netCount_data <- pmax(counts - bg[names(anchors)], 0)
+    if(assay_type %in% c("RNA", "rna", "Rna")){
+      netCount_data <- pmax(counts - bg[names(anchors)], 0)
+    }
+    if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+      netCount_data <- counts 
+    }
     netAvg_perCT <- sapply(cts_to_check, function(ct){
       Matrix::colMeans(netCount_data[anchors == ct, , drop = F], na.rm = T)
     })

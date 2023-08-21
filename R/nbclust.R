@@ -58,6 +58,7 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
     bgsub <- Matrix::rowSums(bgsub)
     
     if(assay_type %in% c("RNA", "rna", "Rna")){
+      xsd <- NULL
       res <- lls_rna(mat=mat, bgsub=bgsub, x=x, bg=bg, size=size)
     }
     
@@ -118,24 +119,13 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
 #' @export
 Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE, assay_type) {
   # get logliks of cells * clusters
-  if(assay_type %in% c("RNA", "rna", "Rna")){
-    logliks <- parallel::mclapply(asplit(means, 2),
-                                  lldist,
-                                  xsd=NULL,
-                                  mat = counts,
-                                  bg = bg,
-                                  size = size,
-                                  assay_type=assay_type,
-                                  mc.cores = numCores())
-    logliks <- do.call(cbind, logliks)
-  }
-  
-  if(assay_type %in% c("Protein", "protein")){
-    logliks <- parallel::mcmapply(function(x, y){lldist(x=x, xsd=y, mat=counts, bg = bg, size = size, assay_type=assay_type)},
-                                  asplit(means, 2), asplit(sds, 2), mc.cores = numCores())
-  }
-  
-  
+  logliks <- lldist(x = means,
+                    mat = counts,
+                    xsd = NULL,
+                    bg = bg,
+                    size = size,
+                    digits = digits,
+                    assay_type = assay_type)
   # adjust by cohort frequency:
   logliks <- update_logliks_with_cohort_freqs(logliks = logliks, 
                                               cohort = cohort, 
@@ -153,7 +143,6 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
     return(round(probs, digits))
   }
 }
-
 
 #' E step: estimate each cluster's mean profile
 #'
@@ -298,22 +287,11 @@ nbclust <- function(counts,
                       neg = bg[!is.na(clust_old)],
                       assay_type=assay_type)
     ## if no init_profiles is provided, use the derived profiles
-    ## otherwise, use the init_profiles
-    if(is.null(init_profiles)){
-      profiles <- profiles_info$profiles
-    }else{
-      profiles <- init_profiles
-    }
+    profiles <- profiles_info$profiles
+    sds <- profiles_info$sds
     
     ## if no init_sds is provided, use the derived SD profiles
     ## otherwise, use the init_sds
-    if(assay_type %in% c("Protein", "protein")){
-      if(is.null(init_sds)){
-        sds <- profiles_info$sds
-      }else{
-        sds <- init_sds
-      }
-    }
     if(assay_type %in% c("RNA", "Rna", "rna")){
       sds <- NULL
     }
@@ -408,9 +386,10 @@ nbclust <- function(counts,
   }
   names(pct_changed) <- paste0("Iter_", seq_len(iter))
 
-    if(assay_type %in% c("Protein", "protein")){
-      sds = sweep(sds, 2, colSums(sds), "/") * 1000
-    }
+  if(assay_type %in% c("Protein", "protein")){
+    sds = sweep(sds, 2, colSums(sds), "/") * 1000
+  }
+  
   out <- list(clust = clust,
              probs = probs,
              profiles = sweep(profiles, 2, colSums(profiles), "/") * 1000,

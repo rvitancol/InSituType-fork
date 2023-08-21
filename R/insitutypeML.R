@@ -12,6 +12,10 @@
 #' @param reference_profiles Matrix of expression profiles of pre-defined clusters,
 #'  e.g. from previous scRNA-seq. These profiles will not be updated by the EM algorithm.
 #'  Colnames must all be included in the init_clust variable.
+#' @param reference_sds Matrix of standard deviation profiles of pre-defined
+#'   clusters. These SD profiles also will not be updated by the EM algorithm. 
+#'   Columns must all be included in the init_clust variable. This parameter should
+#'   be defined if assay_type is protein. Default is NULL. 
 #' @param nb_size The size parameter to assume for the NB distribution.
 #' @param align_genes Logical, for whether to align the counts matrix and the reference_profiles by gene ID.
 #' @param assay_type Assay type of RNA, protein 
@@ -37,7 +41,7 @@
 #' table(sup$clust)
 NULL
 
-.insitutypeML <- function(x, neg = NULL, bg = NULL, cohort = NULL, reference_profiles, reference_sds, nb_size = 10, assay_type, align_genes = TRUE) {
+.insitutypeML <- function(x, neg = NULL, bg = NULL, cohort = NULL, reference_profiles, reference_sds=NULL, nb_size = 10, assay_type, align_genes = TRUE) {
   
   if (any(rowSums(x) == 0)) {
     stop("Cells with 0 counts were found. Please remove.")
@@ -58,27 +62,14 @@ NULL
     cohort <- rep("all", length(bg))
   }
   
-  if(assay_type %in% c("RNA", "rna", "Rna")){
-    # get logliks
-    logliks <- lldist(x = reference_profiles,
-                      xsd=NULL,
-                      mat = x,
-                      bg = bg,
-                      size = nb_size,
-                      assay_type=assay_type)
-  }
-
-  if(assay_type %in% c("Protein", "protein")){
-    # get logliks
-    logliks <- lldist(x = reference_profiles,
-                      xsd = reference_sds,
-                      mat = x,
-                      bg =bg, 
-                      size = nb_size,
-                      assay_type=assay_type)
-  }
-
+  logliks <- lldist(x = reference_profiles,
+                    xsd = reference_sds,
+                    mat = x,
+                    bg =bg, 
+                    size = nb_size,
+                    assay_type=assay_type)
   
+
   # update logliks based on frequencies within cohorts:
   logliks <- update_logliks_with_cohort_freqs(logliks = logliks, 
                                               cohort = cohort, 
@@ -92,10 +83,14 @@ NULL
   probs <- logliks2probs(logliks)
   prob <- apply(probs, 1, max)
   names(prob) <- names(clust)
-  profiles <- Estep(x, 
-                    clust = clust,
-                    neg = neg,
-                    assay_type=assay_type)
+  profiles_info <- Estep(counts=x, 
+                         clust = clust,
+                         neg = neg, 
+                         assay_type=assay_type)
+  
+  profiles <- profiles_info$profiles
+  sds <- profiles_info$sds
+  
   # aligns profiles and logliks, removing lost clusters:
   logliks_from_lost_celltypes <- logliks[, !is.element(colnames(logliks), unique(clust)), drop = FALSE]
   logliks <- logliks[, is.element(colnames(logliks), clust), drop = FALSE]
