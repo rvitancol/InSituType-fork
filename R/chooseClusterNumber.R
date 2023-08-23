@@ -106,9 +106,9 @@ chooseClusterNumber <-
       max_iters = max_iters)  
 
     # get the loglik of the clustering result:
-    loglik_thisclust <- lldist(x = means,
+    loglik_thisclust <- lldist(x = tempclust$profiles,
                                mat = counts,
-                               xsd = NULL,
+                               xsd = tempclust$sds,
                                bg = bg,
                                size = size,
                                digits = digits,

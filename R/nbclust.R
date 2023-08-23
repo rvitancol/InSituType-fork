@@ -63,7 +63,7 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
     }
     
     if(assay_type %in% c("Protein", "protein")){
-      res <- lls_protein(mat=mat, bgsub=bgsub, x=x, xsd=xsd)
+      res <- lls_protein(mat=as.matrix(mat), bgsub=bgsub, x=as.matrix(x), xsd=as.matrix(xsd))
     }
     
   }else{
@@ -94,7 +94,7 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
     }
   }
 
-  names(res) <- rownames(mat)
+  rownames(res) <- rownames(mat)
   colnames(res) <- colnames(x)
   return(round(res, digits))
 }
@@ -121,7 +121,7 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
   # get logliks of cells * clusters
   logliks <- lldist(x = means,
                     mat = counts,
-                    xsd = NULL,
+                    xsd = sds,
                     bg = bg,
                     size = size,
                     digits = digits,

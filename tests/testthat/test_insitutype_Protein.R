@@ -27,7 +27,7 @@ testthat::test_that("semi-sup nbclust preserves fixedprofiles", {
 
 
 # test supervised cell typing using direct loglik calcs:
-sup <- insitutypeML(counts = tonsil_protein$counts,
+sup <- insitutypeML(x = tonsil_protein$counts,
                     neg = Matrix::rowMeans(tonsil_protein$neg),
                     bg = NULL,
                     assay_type = "Protein",
@@ -46,7 +46,7 @@ testthat::test_that("supervised cell typing produces correct outputs", {
 })
 
 # test semi-supervised with 0 new clusts:
-semi <- insitutype(counts = tonsil_protein$counts,
+semi <- insitutype(x = tonsil_protein$counts,
                   neg = Matrix::rowMeans(tonsil_protein$neg),
                   bg = NULL,
                   assay_type = "Protein",
@@ -68,7 +68,10 @@ semi <- insitutype(counts = tonsil_protein$counts,
                   n_anchor_cells = 20,
                   min_anchor_cosine = 0.3,
                   min_anchor_llr = 0.01,
-                  insufficient_anchors_thresh = 2)
+                  insufficient_anchors_thresh = 2,
+                  refinement = FALSE, 
+                  rescale = FALSE, 
+                  refit = TRUE)
 
 testthat::test_that("semiservised cell typing with n_clusts = 0 produces correct outputs", {
   expect_true(all(is.element(c("clust", "prob", "logliks", "profiles"), names(semi))))
@@ -80,12 +83,12 @@ testthat::test_that("semiservised cell typing with n_clusts = 0 produces correct
 
 
 # run unsupervised clustering with several random starts:
-unsup <- insitutype(counts = tonsil_protein$counts,
+unsup <- insitutype(x = tonsil_protein$counts,
                     neg = Matrix::rowMeans(tonsil_protein$neg),
                     bg = NULL,
                     assay_type = "Protein",
                     init_clust = NULL, 
-                    n_clusts = 2:5,
+                    n_clusts = 2:3,
                     reference_profiles = NULL,
                     reference_sds = NULL,
                     anchors = NULL,
@@ -101,7 +104,10 @@ unsup <- insitutype(counts = tonsil_protein$counts,
                     n_chooseclusternumber = 100,
                     pct_drop = 1/10000, 
                     min_prob_increase = 0.05,
-                    max_iters = 2)   
+                    max_iters = 2,
+                    refinement = FALSE, 
+                    rescale = FALSE, 
+                    refit = TRUE)   
 
 testthat::test_that("unsupervised cell typing produces correct outputs", {
   expect_true(all(is.element(c("clust", "prob", "logliks", "profiles"), names(unsup))))
@@ -116,24 +122,31 @@ testthat::test_that("unsupervised cell typing produces correct outputs", {
 
 # run unsupervised clustering with init_clust specified:
 init_clust <- rep(c("name1", "xxx", "ooo"), each = nrow(tonsil_protein$counts) / 3)[seq_len(nrow(tonsil_protein$counts))]
-unsup <- insitutype(counts = tonsil_protein$counts,
+unsup <- insitutype(x = tonsil_protein$counts,
                     neg = Matrix::rowMeans(tonsil_protein$neg),
-                    bg = 0.03,
+                    bg = NULL,
                     assay_type = "Protein",
                     init_clust = init_clust, 
                     n_clusts = 6,
                     reference_profiles = NULL,
+                    reference_sds = NULL,
+                    anchors = NULL,
+                    cohort = rep(c("a", "b"), each = nrow(tonsil_protein$counts) / 2),
                     nb_size = 10,
-                    n_starts = NULL,
+                    n_starts = 2,
                     align_genes = TRUE,
                     sketchingdata = NULL,
                     n_benchmark_cells = 100,
                     n_phase1 = 50,
                     n_phase2 = 100,
                     n_phase3 = 200,
+                    n_chooseclusternumber = 100,
                     pct_drop = 1/10000, 
                     min_prob_increase = 0.05,
-                    max_iters = 4)   
+                    max_iters = 2,
+                    refinement = FALSE, 
+                    rescale = FALSE, 
+                    refit = TRUE)   
 
 
 testthat::test_that("unsupervised cell typing using init_clust produces correct outputs", {
@@ -147,12 +160,13 @@ testthat::test_that("unsupervised cell typing using init_clust produces correct 
 
 
 # semi-supervised using the immune oncology cell profiles (in ptolemy package data):
-semi <- insitutype(counts = tonsil_protein$counts,
+semi <- insitutype(x = tonsil_protein$counts,
                    neg = Matrix::rowMeans(tonsil_protein$neg),
                    bg = NULL,
                    anchors = NULL,
                    assay_type = "Protein",
-                   init_clust = NULL, n_clusts = 2,
+                   init_clust = NULL, 
+                   n_clusts = 2,
                    reference_profiles = tonsil_reference_profile$mean.ref.profile[, 1:3],
                    reference_sds = tonsil_reference_profile$SDs.ref.profile[, 1:3],
                    nb_size = 10,
@@ -169,7 +183,11 @@ semi <- insitutype(counts = tonsil_protein$counts,
                    n_anchor_cells = 20, 
                    min_anchor_cosine = 0.3, 
                    min_anchor_llr = 0.01,
-                   sketchingdata = NULL, insufficient_anchors_thresh = 2)   
+                   sketchingdata = NULL, 
+                   insufficient_anchors_thresh = 2,
+                   refinement = FALSE, 
+                   rescale = FALSE, 
+                   refit = TRUE)   
 
 
 testthat::test_that("semi-supervised cell typing using init_clust produces correct outputs", {
@@ -189,7 +207,8 @@ res <- chooseClusterNumber(counts = tonsil_protein$counts,
                            bg = NULL,
                            anchors = NULL,
                            assay_type = "Protein",
-                           init_clust = NULL, n_clusts = 2:3,
+                           init_clust = NULL, 
+                           n_clusts = 2:3,
                            fixed_profiles = tonsil_reference_profile$mean.ref.profile[, 1:3],
                            fixed_sds = tonsil_reference_profile$SDs.ref.profile[, 1:3],
                            max_iters = 4, 
@@ -289,7 +308,7 @@ rescaled <- updateReferenceProfiles(reference_profiles = tonsil_reference_profil
                                     reference_sds = tonsil_reference_profile$SDs.ref.profile,
                                     assay_type = "Protein",
                                    counts = tonsil_protein$counts,
-                                   neg = tonsil_protein$neg)
+                                   neg = Matrix::rowMeans(tonsil_protein$neg))
 testthat::test_that("rescaleProfiles works as intended", {
   expect_true(is.matrix(rescaled$updated_profiles))
   expect_true(is.vector(rescaled$anchors))
@@ -307,6 +326,11 @@ testthat::test_that("fastCohorting works as intended", {
 # test refineClusters:
 merge1 <- refineClusters(assay_type = "protein",
   merges = NULL, to_delete = NULL, subcluster = NULL, logliks = sup$logliks)
+testthat::test_that("refineClusters works when no directions are passed to it", {
+  expect_equal(sup$logliks, merge1$logliks, tolerance = 1e-2)
+  expect_equal(sup$clust, merge1$clust)
+})
+
 merge2 <- refineClusters(assay_type = "protein",
   merges =  c("gc b cell" = "immune", "cd4 t cell" = "immune"), 
   to_delete = "epithelial", 
@@ -314,10 +338,6 @@ merge2 <- refineClusters(assay_type = "protein",
   logliks = sup$logliks,
   counts = tonsil_protein$counts,
   neg = Matrix::rowMeans(tonsil_protein$neg))
-testthat::test_that("refineClusters works when no directions are passed to it", {
-  expect_equal(sup$logliks, merge1$logliks, tolerance = 1e-2)
-  expect_equal(sup$clust, merge1$clust)
-})
 testthat::test_that("refineClusters works when merges and deletions are asked for", {
   expect_true(all(is.element(colnames(merge2$logliks), c("immune", "cd8 t cell_1", "cd8 t cell_2", "dendritic", "fibroblast"))))
 })

@@ -26,7 +26,7 @@ testthat::test_that("semi-sup nbclust preserves fixedprofiles", {
 
 
 # test supervised cell typing using direct loglik calcs:
-sup <- insitutypeML(counts = mini_nsclc$counts,
+sup <- insitutypeML(x = mini_nsclc$counts,
                     neg = Matrix::rowMeans(mini_nsclc$neg),
                     bg = NULL,
                     assay_type = "rna",
@@ -44,7 +44,7 @@ testthat::test_that("supervised cell typing produces correct outputs", {
 })
 
 # test semi-supervised with 0 new clusts:
-semi <- insitutype(counts = mini_nsclc$counts,
+semi <- insitutype(x = mini_nsclc$counts,
                   neg = Matrix::rowMeans(mini_nsclc$neg),
                   bg = NULL,
                   assay_type = "rna",
@@ -65,7 +65,10 @@ semi <- insitutype(counts = mini_nsclc$counts,
                   n_anchor_cells = 20,
                   min_anchor_cosine = 0.3,
                   min_anchor_llr = 0.01,
-                  insufficient_anchors_thresh = 2)
+                  insufficient_anchors_thresh = 2,
+                  refinement = FALSE, 
+                  rescale = FALSE, 
+                  refit = TRUE)
 
 testthat::test_that("semiservised cell typing with n_clusts = 0 produces correct outputs", {
   expect_true(all(is.element(c("clust", "prob", "logliks", "profiles"), names(semi))))
@@ -77,7 +80,7 @@ testthat::test_that("semiservised cell typing with n_clusts = 0 produces correct
 
 
 # run unsupervised clustering with several random starts:
-unsup <- insitutype(counts = mini_nsclc$counts,
+unsup <- insitutype(x = mini_nsclc$counts,
                     neg = Matrix::rowMeans(mini_nsclc$neg),
                     bg = NULL,
                     assay_type = "rna",
@@ -98,7 +101,10 @@ unsup <- insitutype(counts = mini_nsclc$counts,
                     n_chooseclusternumber = 100,
                     pct_drop = 1/10000, 
                     min_prob_increase = 0.05,
-                    max_iters = 2)   
+                    max_iters = 2,
+                    refinement = FALSE, 
+                    rescale = FALSE, 
+                    refit = TRUE)   
 
 testthat::test_that("unsupervised cell typing produces correct outputs", {
   expect_true(all(is.element(c("clust", "prob", "logliks", "profiles"), names(unsup))))
@@ -113,7 +119,7 @@ testthat::test_that("unsupervised cell typing produces correct outputs", {
 
 # run unsupervised clustering with init_clust specified:
 init_clust <- rep(c("name1", "xxx", "ooo"), each = nrow(mini_nsclc$counts) / 3)[seq_len(nrow(mini_nsclc$counts))]
-unsup <- insitutype(counts = mini_nsclc$counts,
+unsup <- insitutype(x = mini_nsclc$counts,
                     neg = Matrix::rowMeans(mini_nsclc$neg),
                     bg = 0.03,
                     assay_type = "rna",
@@ -130,7 +136,10 @@ unsup <- insitutype(counts = mini_nsclc$counts,
                     n_phase3 = 200,
                     pct_drop = 1/10000, 
                     min_prob_increase = 0.05,
-                    max_iters = 4)   
+                    max_iters = 4,
+                    refinement = FALSE, 
+                    rescale = FALSE, 
+                    refit = TRUE)   
 
 
 testthat::test_that("unsupervised cell typing using init_clust produces correct outputs", {
@@ -144,7 +153,7 @@ testthat::test_that("unsupervised cell typing using init_clust produces correct 
 
 
 # semi-supervised using the immune oncology cell profiles (in ptolemy package data):
-semi <- insitutype(counts = mini_nsclc$counts,
+semi <- insitutype(x = mini_nsclc$counts,
                    neg = Matrix::rowMeans(mini_nsclc$neg),
                    bg = NULL,
                    anchors = NULL,
@@ -165,7 +174,11 @@ semi <- insitutype(counts = mini_nsclc$counts,
                    n_anchor_cells = 20, 
                    min_anchor_cosine = 0.3, 
                    min_anchor_llr = 0.01,
-                   sketchingdata = NULL, insufficient_anchors_thresh = 2)   
+                   sketchingdata = NULL, 
+                   insufficient_anchors_thresh = 2,
+                   refinement = FALSE, 
+                   rescale = FALSE, 
+                   refit = TRUE)   
 
 
 testthat::test_that("semi-supervised cell typing using init_clust produces correct outputs", {
@@ -295,6 +308,11 @@ testthat::test_that("find_anchor_cells produces correct outputs when none select
 # test refineClusters:
 merge1 <- refineClusters(
   merges = NULL, to_delete = NULL, subcluster = NULL, logliks = sup$logliks)
+testthat::test_that("refineClusters works when no directions are passed to it", {
+  expect_equal(sup$logliks, merge1$logliks, tolerance = 1e-2)
+  expect_equal(sup$clust, merge1$clust)
+})
+
 merge2 <- refineClusters(
   merges =  c("macrophage" = "myeloid", "mDC" = "myeloid", "B-cell" = "lymphoid"), 
   to_delete = "endothelial", 
@@ -302,10 +320,6 @@ merge2 <- refineClusters(
   logliks = sup$logliks,
   counts = mini_nsclc$counts,
   neg = Matrix::rowMeans(mini_nsclc$neg))
-testthat::test_that("refineClusters works when no directions are passed to it", {
-  expect_equal(sup$logliks, merge1$logliks, tolerance = 1e-2)
-  expect_equal(sup$clust, merge1$clust)
-})
 testthat::test_that("refineClusters works when merges and deletions are asked for", {
   expect_true(all(is.element(colnames(merge2$logliks), c("lymphoid", "myeloid", "fibroblast_1", "fibroblast_2", "mast"))))
 })

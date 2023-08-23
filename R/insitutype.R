@@ -298,8 +298,11 @@ NULL
     tempprofiles <- sapply(by(x[!is.na(init_clust), ], init_clust[!is.na(init_clust)], colMeans), cbind)
     rownames(tempprofiles) <- colnames(x)
 
-    tempsds <- sapply(by(x[!is.na(init_clust), ], init_clust[!is.na(init_clust)], sd), cbind)
-    rownames(tempsds) <- colnames(x)
+    tempsds <- lapply(unique(init_clust[!is.na(init_clust)]), function(x){
+      return(apply(counts[!is.na(init_clust), ][init_clust[!is.na(init_clust)]==x,], 2, sd))
+    })
+    names(tempsds) <- unique(init_clust[!is.na(init_clust)])
+    tempsds <- do.call("cbind", tempsds)
     
   } else {
     message(paste0("phase 1: random starts in ", n_phase1, " cell subsets"))
@@ -342,7 +345,6 @@ NULL
         min_prob_increase = min_prob_increase,
         max_iters = max(max_iters, 20),
       )
-
       profiles_from_random_starts[[i]] <- tempNBclust$profiles
       sds_from_random_starts[[i]] <- tempNBclust$sds
     }
@@ -362,7 +364,11 @@ NULL
     }
     best_start <- which.max(benchmarking_logliks)
     tempprofiles <- profiles_from_random_starts[[best_start]]
-
+    
+    if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+      tempsds <- sds_from_random_starts[[best_start]]
+    }
+    
     if(assay_type %in% c("RNA", "Rna", "rna")){
       tempsds <- NULL
     }

@@ -18,7 +18,7 @@ testthat::test_that("Rcpp calculation is same as stats package for RNA data type
   yhat <- sweep(s %*% t(x), 1, bg, "+")
   lls <- stats::dnbinom(x = as.matrix(mat), size = 10, mu = yhat, log = TRUE)
   result_ref <- round(rowSums(lls), digits=2)
-  expect_true(all.equal(result, result_ref))
+  expect_true(all.equal(result[,1], result_ref))
 })
 
 
@@ -35,18 +35,19 @@ testthat::test_that("Rcpp calculation is same as stats package for protein data 
   bgsub <- pmax(sweep(mat, 1, bg, "-"), 0)
   s <- Matrix::rowSums(bgsub) / sum(x)
   s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum(x)
-  result <- InSituType::lldist(mat = as(mat, "dgCMatrix"),
+  result <- InSituType::lldist(mat = as.matrix(mat),
                                assay_type = "Protein",
                                x = x,
                                xsd = xsd,
                                bg=bg, 
                                size = 10)
   names(result) <- rownames(mat)
+  
   yhat <- s %*% t(x)
   ysd <- s %*% t(xsd)
 
   lls <- stats::dnorm(x = as.matrix(mat), sd = ysd, mean = yhat, log = TRUE)
   
   result_ref <- round(rowSums(lls), digits=2)
-  expect_true(all.equal(result, result_ref))
+  expect_true(all.equal(result[,1], result_ref))
 })

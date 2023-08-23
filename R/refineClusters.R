@@ -105,7 +105,7 @@ refineClusters <- function(assay_type="RNA", merges = NULL, to_delete = NULL, su
     message(paste0("Subclustering ", name))
     use <- which(colnames(newlogliks)[apply(newlogliks, 1, which.max)] == name)
     # run insitutype on just the named cell type:
-    temp <- insitutype(counts = counts[use, ],
+    temp <- insitutype(x = counts[use, ],
                        assay_type = assay_type,
                        neg = neg[use],
                        bg = bg[use],
@@ -158,8 +158,14 @@ refineClusters <- function(assay_type="RNA", merges = NULL, to_delete = NULL, su
   logliks_from_lost_celltypes <- newlogliks[, !is.element(colnames(newlogliks), unique(clust)), drop = FALSE]
   newlogliks <- newlogliks[, is.element(colnames(newlogliks), clust), drop = FALSE]
   profiles <- profiles[, colnames(newlogliks), drop = FALSE]
-  sds <- sds[, colnames(newlogliks), drop = FALSE]
   
+  if(assay_type %in% c("Protein", "Protein", "protein")){
+    sds <- sds[, colnames(newlogliks), drop = FALSE]
+  }
+  
+  if(assay_type %in% c("RNA", "Rna", "rna")){
+    sds <- NULL
+  }
   out <- list(clust = clust, prob = prob, logliks = round(newlogliks, 4), # (rounding logliks to save memory)
               profiles = profiles, sds=sds, logliks_from_lost_celltypes = round(logliks_from_lost_celltypes, 4))  
   return(out)
