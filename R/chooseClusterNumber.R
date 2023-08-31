@@ -33,6 +33,11 @@
 #' \itemize{
 #'  \item
 #' }
+#' @examples
+#' data("mini_nsclc")
+#' chooseClusterNumber(mini_nsclc$counts, Matrix::rowMeans(mini_nsclc$neg),
+#'  n_clust = 2:5)
+
 chooseClusterNumber <-
   function(counts,
            neg,
@@ -110,7 +115,7 @@ chooseClusterNumber <-
                                mat = counts,
                                xsd = tempclust$sds,
                                bg = bg,
-                               size = size,
+                               size = nb_size,
                                digits = digits,
                                assay_type = assay_type)
 

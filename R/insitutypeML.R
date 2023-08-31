@@ -37,7 +37,8 @@
 #' sup <- insitutypeML(
 #'  x = mini_nsclc$counts,
 #'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  reference_profiles = ioprofiles)
+#'  reference_profiles = ioprofiles,
+#'  assay_type = "RNA")
 #' table(sup$clust)
 NULL
 

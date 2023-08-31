@@ -2,7 +2,8 @@
 % Please edit documentation in R/nbclust.R
 \name{lldist}
 \alias{lldist}
-\title{Calculate the likelihood of the vector x using the reference vector of y}
+\title{Calculate the likelihood of the expression mat
+  using the reference profiles of x}
 \usage{
 lldist(x, xsd = NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type)
 }
@@ -23,7 +24,10 @@ lldist(x, xsd = NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type)
 }
 \value{
 likelihood for profile
+
+cells x profiles matrix of log likelihoods
 }
 \description{
-Calculate the likelihood of the vector x using the reference vector of y
+Calculate the likelihood of the expression mat
+  using the reference profiles of x
 }

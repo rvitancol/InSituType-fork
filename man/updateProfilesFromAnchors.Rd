@@ -5,17 +5,7 @@
 \title{Use anchor cells to update reference profiles, simply by taking the mean
 profile of the anchors.}
 \usage{
-updateProfilesFromAnchors(
-  counts,
-  neg,
-  bg = NULL,
-  assay_type,
-  anchors,
-  reference_profiles,
-  align_genes = TRUE,
-  nb_size = 10,
-  max_rescaling = 5
-)
+updateProfilesFromAnchors(counts, neg, bg = NULL, assay_type, anchors)
 }
 \arguments{
 \item{counts}{Counts matrix, cells * genes.}

@@ -32,7 +32,7 @@ Input linear-scale expression, with genes in rows and cell types in columns.}
 \item{sds}{Matrix of reference profiles holding SDs expression of genes x cell types. 
 Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein}
 
-\item{size}{Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA}
+\item{size}{Negative binomial size parameter to be used in likelihood calculation.}
 
 \item{assay_type}{Assay type of RNA, protein}
 
@@ -47,4 +47,11 @@ Compute the statistics used in finding anchor cells.
 Often the anchor cell selection process will involve some trial-and-error. 
 This function performs the computationally-expensive steps that only need to 
 happen once.
+}
+\examples{
+data("ioprofiles")
+data("mini_nsclc")
+get_anchor_stats(counts = mini_nsclc$counts,
+                 neg = Matrix::rowMeans(mini_nsclc$neg),
+                 profiles = ioprofiles)
 }

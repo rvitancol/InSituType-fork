@@ -1,22 +1,6 @@
-#' Get number of cores for parallelized operations
-#'
-#' @return number of cores to use for mclapply
-#' @export
-numCores <- function() {
-  num_cores <- 1
-  if (.Platform$OS.type == "unix") {
-    if (is.null(getOption("mc.cores"))) {
-      num_cores <- parallel::detectCores() - 2
-    } else {
-      num_cores <- getOption("mc.cores")
-    }
-    
-  }
-  return(num_cores)
-}
-
-#' Calculate the likelihood of the vector x using the reference vector of y
-#'
+#' Calculate the likelihood of the expression mat
+#'   using the reference profiles of x
+#'   
 #' @param x a vector of a reference mean profile for the cell type
 #' @param xsd a vector of a reference standard deviation profile for the cell type
 #' @param mat a matrix of expression levels in all cells: for Protein data, we use raw data for calculating the scaling factor 
@@ -29,7 +13,16 @@ numCores <- function() {
 #' @importFrom stats dnbinom
 #' @importFrom methods as is
 #' @return likelihood for profile
-lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type) {
+#' @return cells x profiles matrix of log likelihoods
+#' @examples
+#' data("mini_nsclc")
+#' data("ioprofiles")
+#' bg <- Matrix::rowMeans(mini_nsclc$neg)
+#' genes <- intersect(dimnames(mini_nsclc$counts)[[2]], dimnames(ioprofiles)[[1]])
+#' mat <- mini_nsclc$counts[, genes]
+#' x <- ioprofiles[genes, ]
+#' lldist(x = x, mat = mini_nsclc$counts, bg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA)
+  lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type) {
   # convert to matrix form if only a vector was input:
   if (is.vector(mat)) {
     mat <- as(matrix(mat, nrow = 1), "dgCMatrix")
@@ -117,6 +110,12 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
 #' 
 #' @return Matrix of probabilities of each cell belonging to each cluster
 #' @export
+#' @examples 
+#' data("mini_nsclc")
+#' data("ioprofiles")
+#' sharedgenes <- intersect(rownames(ioprofiles), colnames(mini_nsclc$counts))
+#' Mstep(mini_nsclc$counts, ioprofiles[sharedgenes, ], bg = Matrix::rowMeans(mini_nsclc$neg), cohort = NULL, assay_type="RNA")
+  
 Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE, assay_type) {
   # get logliks of cells * clusters
   logliks <- lldist(x = means,
@@ -158,6 +157,20 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
 #'
 #' @return A matrix of cluster profiles, genes * clusters
 #' @export
+#' @examples 
+#' data("ioprofiles")
+#' unsup <- insitutype(
+#'  x = mini_nsclc$counts,
+#'  neg = Matrix::rowMeans(mini_nsclc$neg),
+#'  n_clusts = 8,
+#'  n_phase1 = 200,
+#'  n_phase2 = 500,
+#'  n_phase3 = 2000,
+#'  n_starts = 1,
+#'  max_iters = 5
+#' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
+#' Estep(counts = mini_nsclc$counts, clust = unsup$clust, neg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA")
+
 Estep <- function(counts, clust, neg, assay_type) {
 
   # get cluster means:
@@ -226,6 +239,24 @@ Estep <- function(counts, clust, neg, assay_type) {
 #' \item probs: a matrix of probabilities of all cells (rows) belonging to all clusters (columns)
 #' \item profiles: a matrix of cluster-specific expression profiles
 #' }
+#' @examples 
+#' data("ioprofiles")
+#' data("mini_nsclc")
+#' sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
+#' nbclust(counts = mini_nsclc$counts[, sharedgenes],
+#'        neg =  Matrix::rowMeans(mini_nsclc$neg), 
+#'        assay_type = "RNA",
+#'        bg = NULL,
+#'        fixed_profiles = ioprofiles[sharedgenes, 1:3],
+#'        init_profiles = NULL, 
+#'        init_clust = rep(c("a", "b"), 
+#'        nrow(mini_nsclc$counts) / 2),
+#'        nb_size = 10,
+#'        cohort = rep("a", nrow(mini_nsclc$counts)),
+#'        pct_drop = 1/10000,
+#'        min_prob_increase = 0.05, 
+#'        max_iters = 3, 
+#'        logresults = FALSE)
 nbclust <- function(counts, 
                     neg, 
                     assay_type, 
@@ -402,7 +433,9 @@ nbclust <- function(counts,
 #' For a numeric object, return a logical object of whether each element is the max or not.
 #' @param x a vector of values
 #' @return a vecetor of logical values
-#'
+#' @examples
+#' ismax(c(3, 5, 5, 2))
+
 ismax <- function(x) {
   return(x == max(x, na.rm = TRUE))
 }

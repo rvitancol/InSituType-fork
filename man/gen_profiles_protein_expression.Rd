@@ -12,7 +12,8 @@ gen_profiles_protein_expression(
   exp.mat,
   sig_mat = NULL,
   cutoff = 0.9,
-  min.num.cells = 30
+  min.num.cells = 30,
+  keep_marker_proteins = FALSE
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ gen_profiles_protein_expression(
 \item{cutoff}{a cutoff of quantile. e.g) cutoff=0.9 means that top 90 percentiles of cells are called anchors for the protein expression}
 
 \item{min.num.cells}{a minimum number of cells each cell type to estimate its mean or SDs. default value is 30.}
+
+\item{keep_marker_proteins}{whether just marker proteins from the signature matrix is kept. default value is FALSE, which returns all proteins included in the data}
 }
 \value{
 A list, with the following elements:

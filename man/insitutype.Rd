@@ -44,6 +44,11 @@ insitutype(x, ...)
 \S4method{insitutype}{SingleCellExperiment}(x, ..., assay.type = "counts")
 }
 \arguments{
+\item{x}{Counts matrix (or dgCMatrix), cells * genes.
+
+  Alternatively, a \linkS4class{SingleCellExperiment} object containing such
+  a matrix.}
+
 \item{...}{For the \linkS4class{SingleCellExperiment} method, additional
 arguments to pass to the ANY method.}
 
@@ -138,8 +143,6 @@ this many anchors after anchor selection will be discarded.}
 \item{refit}{Logical, flag for fitting reference profiles to anchors, used when update_reference_profiles = TRUE (default = TRUE)}
 
 \item{assay.type}{A string specifying which assay values to use.}
-
-\item{counts}{Counts matrix (or dgCMatrix), cells * genes.}
 }
 \value{
 A list, with the following elements: \enumerate{ \item clust: a
@@ -158,6 +161,7 @@ data("mini_nsclc")
 unsup <- insitutype(
  x = mini_nsclc$counts,
  neg = Matrix::rowMeans(mini_nsclc$neg),
+ assay_type = "RNA",
  n_clusts = 8,
  n_phase1 = 200,
  n_phase2 = 500,

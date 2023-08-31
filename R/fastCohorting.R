@@ -23,7 +23,7 @@
 #'                           nrow(mini_nsclc$counts))
 #' cohort <- fastCohorting(immunofluordata, gaussian_transform = TRUE)
 #' table(cohort)
-fastCohorting <- function(mat, n_cohorts = NULL, gaussian_transform = FALSE) {
+fastCohorting <- function(mat, n_cohorts = NULL, gaussian_transform = TRUE) {
   
   if (any(is.na(mat))) {
     stop("NA's detected in mat. fastCohorting needs complete data.")
@@ -47,7 +47,7 @@ fastCohorting <- function(mat, n_cohorts = NULL, gaussian_transform = FALSE) {
   
   # cluster in a subsample:
   sub <- sample(seq_len(nrow(mat)), min(20000, nrow(mat)))
-  mc <- mclust::Mclust(data = mat[sub, ], G = n_cohorts, modelNames = "VVV")
+  mc <- mclust::Mclust(data = mat[sub, ], G = n_cohorts, modelNames = "EEE")
   
   # classify all cells:
   cohort <- mclust::predict.Mclust(object = mc, newdata = mat)$classification

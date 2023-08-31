@@ -4,7 +4,7 @@
 \alias{geoSketch_sample_from_plaids}
 \title{Subsample from plaids}
 \usage{
-geoSketch_sample_from_plaids(Plaid, N, seed = NULL)
+geoSketch_sample_from_plaids(Plaid, N)
 }
 \arguments{
 \item{Plaid}{Vector of cells' plaid IDs}
@@ -20,4 +20,9 @@ sampledCells, a vector of cellIDs sampled using the geometric sketching method
 }
 \description{
 Sample cells, trying to give each plaid equal representation
+}
+\examples{
+data("mini_nsclc")
+plaids <- geoSketch_get_plaid(mini_nsclc$counts, 100)
+geoSketch_sample_from_plaids(plaids, 5)
 }

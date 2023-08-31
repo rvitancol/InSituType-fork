@@ -21,9 +21,52 @@
 #' @param min_anchor_llr For semi-supervised learning. Cells must have
 #'   (log-likelihood ratio / totalcounts) above this threshold to be used as an
 #'   anchor
-#' 
-#' @return updated reference profiles
+#' @param insufficient_anchors_thresh Cell types that end up with fewer than
+#'   this many anchors will be discarded.
+#' @param refinement Logical, flag for further anchor refinement via UMAP projection (default = FALSE)
+#' @param blacklist vector of genes to be excluded for cell typing (default = NULL)
+#' @param rescale Logical, flag for platform effect correction (default = FALSE)
+#' @param refit Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)
+#' @return a list 
+#' \describe{
+#'     \item{updated_profiles}{a genes * cell types matrix for final updated reference profiles}
+#'     \item{blacklist}{a vector of genes excluded from the final updated reference profiles}
+#'     \item{anchors}{a named vector for final anchors used for reference profile update}
+#'     \item{rescale_res}{a list of 5 elements, `rescaled_profiles`, `platformEff_statsDF`, `anchors`, `blacklist` and `lostgenes`, for platform effect correction outputs, return when rescale = TRUE}
+#'     \item{refit_res}{a list of 2 elements, `refitted_profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
+#' }
 #' @export
+#' @examples
+#' data("mini_nsclc")
+#' data("ioprofiles")
+#' counts <- mini_nsclc$counts
+#' astats <- get_anchor_stats(counts = mini_nsclc$counts,
+#'  neg = Matrix::rowMeans(mini_nsclc$neg),
+#'  profiles = ioprofiles)
+#' @return updated reference profiles
+#' # now choose anchors:
+#' anchors <- choose_anchors_from_stats(counts = counts, 
+#'                                     neg = mini_nsclc$negmean, 
+#'                                     bg = per.cell.bg,
+#'                                     anchorstats = astats, 
+#'                                     # a very low value chosen for the mini
+#'                                     # dataset. Typically hundreds of cells
+#'                                     # would be better.
+#'                                     n_cells = 50, 
+#'                                     min_cosine = 0.4, 
+#'                                     min_scaled_llr = 0.03, 
+#'                                     insufficient_anchors_thresh = 5)
+#'
+#' # The next step is to use the anchors to update the reference profiles:
+#'
+#' updateReferenceProfiles(reference_profiles = ioprofiles,
+#'                         reference_sds = NULL,
+#'                         counts = mini_nsclc$counts, 
+#'                         neg = mini_nsclc$neg, 
+#'                         assay_type = "rna", 
+#'                         bg = per.cell.bg,
+#'                         anchors = anchors) 
+
 updateReferenceProfiles <-
   function(reference_profiles,
            reference_sds,

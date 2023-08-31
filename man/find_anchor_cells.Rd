@@ -10,7 +10,7 @@ find_anchor_cells(
   bg = NULL,
   align_genes = TRUE,
   profiles,
-  sds = sds,
+  sds,
   size = 10,
   assay_type,
   n_cells = 500,
@@ -63,4 +63,12 @@ Finds cells with very good fits to the reference profiles, and saves these
 cells for use as "anchors" in the semi-supervised learning version of
 nbclust. The function would first pick anchor cell candidates through stats 
 and then refine anchors based on umap projection.
+}
+\examples{
+data("ioprofiles")
+data("mini_nsclc")
+sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
+find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], assay_type=assay_type,sds=NULL,
+                  neg = Matrix::rowMeans(mini_nsclc$neg),
+                  profiles = ioprofiles)
 }

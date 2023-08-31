@@ -11,9 +11,9 @@
 #'  the profiles matrix based on their names. 
 #' @param profiles Matrix of reference profiles holding mean expression of genes x cell types. 
 #'  Input linear-scale expression, with genes in rows and cell types in columns.
+#' @param size Negative binomial size parameter to be used in likelihood calculation.
 #' @param sds Matrix of reference profiles holding SDs expression of genes x cell types. 
 #'  Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein
-#' @param size Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA
 #' @param assay_type Assay type of RNA, protein 
 #' @param min_cosine Cells must have at least this much cosine similarity to a fixed profile to be used as an anchor.
 #' @return A list with two elements: cos, the matrix of cosine distances;

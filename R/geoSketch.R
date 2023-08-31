@@ -14,6 +14,9 @@
 #' 
 #' @return A matrix of data for geoSketch, with cells in rows and features in columns
 #' @importFrom irlba prcomp_irlba
+#' @examples
+#' data("mini_nsclc")
+#' prepDataForSketching(counts=mini_nsclc$counts, assay_type="RNA")
 prepDataForSketching <- function(counts, assay_type) {
   # get PCs:
   if(assay_type %in% c("RNA", "rna", "Rna")){
@@ -50,6 +53,9 @@ prepDataForSketching <- function(counts, assay_type) {
 #' @param seed set seed for random sampling
 #'
 #' @return Plaid, a named vector of binIDs where names correspond to cellIDs
+#' @examples
+#' data("mini_nsclc")
+#' geoSketch_get_plaid(mini_nsclc$counts, 100)
 geoSketch_get_plaid <- function(X, N,
                                 alpha=0.1,
                                 max_iter=200,
@@ -134,13 +140,12 @@ geoSketch_get_plaid <- function(X, N,
 #' 
 #' @return Plaid, a named vector of binIDs where names correspond to cellIDs
 #' @return sampledCells, a vector of cellIDs sampled using the geometric sketching method
-geoSketch_sample_from_plaids <- function(Plaid, N, seed=NULL) {
-  
-  # Define seed for sampling if given
-  if (!is.null(seed)){
-    set.seed(seed)
-  }
-  
+#' @examples
+#' data("mini_nsclc")
+#' plaids <- geoSketch_get_plaid(mini_nsclc$counts, 100)
+#' geoSketch_sample_from_plaids(plaids, 5)
+geoSketch_sample_from_plaids <- function(Plaid, N) {
+
   # define cells' sampling probabilities as the inverse of their plaid size:
   PlaidCounts <- table(Plaid) # Count the number of cells per bin
   prob <- 1 / PlaidCounts[Plaid]
@@ -166,18 +171,15 @@ geoSketch_sample_from_plaids <- function(Plaid, N, seed=NULL) {
 #' 
 #' @return sampledCells, a vector of cellIDs sampled using the geometric sketching method
 #' @return Plaid, a named vector of binIDs where names correspond to cellIDs
+#' @examples
+#' data("mini_nsclc")
+#' geoSketch(mini_nsclc$counts, 200)
 geoSketch <- function(X, N,
                       alpha=0.1,
                       max_iter=200,
                       returnBins=FALSE,
-                      minCellsPerBin = 1,
-                      seed=NULL) {
-  
-  # Define seed for sampling if given
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  
+                      minCellsPerBin = 1) {
+
   # Determine the total number of cells and compare it to the desired sample size 
   nCells <- nrow(X)
   

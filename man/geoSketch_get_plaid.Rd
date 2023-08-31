@@ -40,3 +40,7 @@ Plaid, a named vector of binIDs where names correspond to cellIDs
 \description{
 Assign cells to "plaids", very rough clusters.
 }
+\examples{
+data("mini_nsclc")
+geoSketch_get_plaid(mini_nsclc$counts, 100)
+}
