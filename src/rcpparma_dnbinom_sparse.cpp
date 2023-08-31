@@ -2,7 +2,6 @@
 
 // we only include RcppArmadillo.h which pulls Rcpp.h in for us
 #include "RcppArmadillo.h"
-
 // via the depends attribute we tell Rcpp to create hooks for
 // RcppArmadillo so that the build process will know what to do
 //
@@ -10,16 +9,12 @@
 // [[Rcpp::plugins(cpp11)]]
 using namespace Rcpp; 
 using namespace arma;
-
 // Add a flag to enable OpenMP at compile time
 // [[Rcpp::plugins(openmp)]]
-
 // Protect against compilers without OpenMP
 #ifdef _OPENMP
 #include <omp.h>
-
 static int NBthreads = -1;
-
 int get_lldist_threads(const int n_profiles) {
   if (NBthreads == -1) {
     // Max allocation of threads equal to 80% of cores
@@ -33,7 +28,6 @@ int get_lldist_threads(const int n_profiles) {
   return std::min(ans, NBthreads);
 }
 #endif
-
 //' sum from negative binomial density function
  //'
  //' Probability density function of the negative binomial distribution (written in C++)
@@ -74,10 +68,9 @@ lls_rna(arma::sp_mat& mat, arma::vec& bgsub, arma::mat& x, arma::vec& bg, int& s
   }
   return res;
 }
-
-//' sum from negative binomial density function
+//' sum from Gaussian density function
  //'
- //' Probability density function of the negative binomial distribution (written in C++)
+ //' Probability density function of the Gaussian distribution (written in C++)
  //'
  //' @param mat dgCMatrix expression matrix
  //' @param bgsub vector of background expression per cell

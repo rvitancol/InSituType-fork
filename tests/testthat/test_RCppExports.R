@@ -9,7 +9,7 @@ testthat::test_that("Rcpp calculation is same as stats package for RNA data type
   bgsub <- pmax(sweep(mat, 1, bg, "-"), 0)
   s <- Matrix::rowSums(bgsub) / sum(x)
   s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum(x)
-  result <- InSituType::lldist(mat = as(mat, "dgCMatrix"),
+  result <- lldist(mat = as(mat, "dgCMatrix"),
                                assay_type = "rna",
                                x = x,
                                bg=bg, 
@@ -35,7 +35,7 @@ testthat::test_that("Rcpp calculation is same as stats package for protein data 
   bgsub <- pmax(sweep(mat, 1, bg, "-"), 0)
   s <- Matrix::rowSums(bgsub) / sum(x)
   s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum(x)
-  result <- InSituType::lldist(mat = as.matrix(mat),
+  result <- lldist(mat = as.matrix(mat),
                                assay_type = "Protein",
                                x = x,
                                xsd = xsd,

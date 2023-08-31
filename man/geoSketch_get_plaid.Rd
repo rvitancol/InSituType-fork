@@ -10,8 +10,7 @@ geoSketch_get_plaid(
   alpha = 0.1,
   max_iter = 200,
   returnBins = FALSE,
-  minCellsPerBin = 1,
-  seed = NULL
+  minCellsPerBin = 1
 )
 }
 \arguments{
@@ -31,8 +30,6 @@ cell}
 
 \item{minCellsPerBin}{the minimum number of cells required for a bin to be
 considered for sampling}
-
-\item{seed}{set seed for random sampling}
 }
 \value{
 Plaid, a named vector of binIDs where names correspond to cellIDs

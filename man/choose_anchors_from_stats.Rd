@@ -61,6 +61,7 @@ data("mini_nsclc")
 counts <- mini_nsclc$counts
 astats <- get_anchor_stats(counts = counts,
                          neg = Matrix::rowMeans(mini_nsclc$neg),
+                         sds=NULL, assay_type = "RNA",
                          profiles = ioprofiles)
 
 ## estimate per-cell bg as a fraction of total counts:
@@ -78,5 +79,6 @@ choose_anchors_from_stats(counts = counts,
                           n_cells = 50, 
                           min_cosine = 0.4, 
                           min_scaled_llr = 0.03, 
-                          insufficient_anchors_thresh = 5)
+                          insufficient_anchors_thresh = 5,
+                          assay_type="RNA")
 }

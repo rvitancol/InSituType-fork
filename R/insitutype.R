@@ -185,7 +185,7 @@ NULL
   fixed_sds <- NULL
   
   if (!is.null(reference_profiles)) { ## This is more for Supervised or Semi-Supervised case 
-    if(is.null(reference_sds) & assay_type %in% c("Protein", "protein")){
+    if(is.null(reference_sds) && assay_type %in% c("Protein", "protein")){
       stop("For protein data type, the reference SD profile should be provided!")
     }
     ## Update the profile matrix only for Semi-supervised or Supervised cases ##
@@ -334,8 +334,8 @@ NULL
     tempprofiles <- sapply(by(x[!is.na(init_clust), ], init_clust[!is.na(init_clust)], colMeans), cbind)
     rownames(tempprofiles) <- colnames(x)
 
-    tempsds <- lapply(unique(init_clust[!is.na(init_clust)]), function(x){
-      return(apply(counts[!is.na(init_clust), ][init_clust[!is.na(init_clust)]==x,], 2, sd))
+    tempsds <- lapply(unique(init_clust[!is.na(init_clust)]), function(y){
+      return(apply(x[!is.na(init_clust), ][init_clust[!is.na(init_clust)]==y,], 2, sd))
     })
     names(tempsds) <- unique(init_clust[!is.na(init_clust)])
     tempsds <- do.call("cbind", tempsds)

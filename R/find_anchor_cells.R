@@ -25,7 +25,9 @@
 #' data("mini_nsclc")
 #' get_anchor_stats(counts = mini_nsclc$counts,
 #'                  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'                  profiles = ioprofiles)
+#'                  profiles = ioprofiles,
+#'                  sds=NULL, 
+#'                  assay_type = "RNA")
 get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                              profiles, sds, size = 10, assay_type, 
                              min_cosine = 0.3) {
@@ -119,6 +121,7 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #' counts <- mini_nsclc$counts
 #' astats <- get_anchor_stats(counts = counts,
 #'                          neg = Matrix::rowMeans(mini_nsclc$neg),
+#'                          sds=NULL, assay_type = "RNA",
 #'                          profiles = ioprofiles)
 #'
 #' ## estimate per-cell bg as a fraction of total counts:
@@ -136,7 +139,8 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #'                           n_cells = 50, 
 #'                           min_cosine = 0.4, 
 #'                           min_scaled_llr = 0.03, 
-#'                           insufficient_anchors_thresh = 5)
+#'                           insufficient_anchors_thresh = 5,
+#'                           assay_type="RNA")
 choose_anchors_from_stats <-
   function(counts,
            neg = NULL,
@@ -249,7 +253,9 @@ choose_anchors_from_stats <-
 #' data("ioprofiles")
 #' data("mini_nsclc")
 #' sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
-#' find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], assay_type=assay_type,sds=NULL,
+#' find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], 
+#'                   assay_type="RNA", 
+#'                   sds=NULL,
 #'                   neg = Matrix::rowMeans(mini_nsclc$neg),
 #'                   profiles = ioprofiles)
 find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,

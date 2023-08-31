@@ -24,7 +24,8 @@ updateReferenceProfiles(
 )
 }
 \arguments{
-\item{reference_profiles}{Matrix of reference mean profiles, genes * cell types}
+\item{reference_profiles}{Matrix of reference mean profiles, genes * cell types
+are specified, by first choosing anchor cells.}
 
 \item{reference_sds}{Matrix of standard deviation profiles, genes * cell types. Only for assay_type of protein.}
 
@@ -38,9 +39,10 @@ updateReferenceProfiles(
 
 \item{nb_size}{The size parameter to assume for the NB distribution. Only for assay_type of RNA}
 
-\item{anchors}{Vector giving "anchor" cell types, for use in semi-supervised
-clustering. Vector elements will be mainly NA's (for non-anchored cells)
-and cell type names for cells to be held constant throughout iterations.}
+\item{anchors}{named vector giving "anchor" cell types with cell_id in names, 
+for use in semi-supervised clustering. Vector elements will be mainly NA's 
+(for non-anchored cells) and cell type names for cells to be held constant 
+throughout iterations.}
 
 \item{n_anchor_cells}{For semi-supervised learning. Maximum number of anchor
 cells to use for each cell type.}
@@ -73,9 +75,24 @@ a list
     \item{rescale_res}{a list of 5 elements, `rescaled_profiles`, `platformEff_statsDF`, `anchors`, `blacklist` and `lostgenes`, for platform effect correction outputs, return when rescale = TRUE}
     \item{refit_res}{a list of 2 elements, `refitted_profiles` and `anchors`, for anchor-based profile refitting outputs, return when refit = TRUE}
 }
+}
+\description{
+Update reference profiles using pre-specified anchor cells, or if no anchors
+are specified, by first choosing anchor cells. Option to return reference 
+profiles rescaled for platform effect and/or to return further refitted profiles 
+based on the observed profiles of anchor cells.
+}
+\examples{
+data("mini_nsclc")
+data("ioprofiles")
+counts <- mini_nsclc$counts
+astats <- get_anchor_stats(counts = mini_nsclc$counts, 
+                           assay_type="RNA", 
+                           neg = Matrix::rowMeans(mini_nsclc$neg),
+                           profiles = ioprofiles,
+                           sds=NULL)
 
-updated reference profiles
-# now choose anchors:
+now choose anchors:
 anchors <- choose_anchors_from_stats(counts = counts, 
                                     neg = mini_nsclc$negmean, 
                                     bg = per.cell.bg,
@@ -86,7 +103,8 @@ anchors <- choose_anchors_from_stats(counts = counts,
                                     n_cells = 50, 
                                     min_cosine = 0.4, 
                                     min_scaled_llr = 0.03, 
-                                    insufficient_anchors_thresh = 5)
+                                    insufficient_anchors_thresh = 5,
+                                    assay_type="RNA")
 
 # The next step is to use the anchors to update the reference profiles:
 
@@ -96,17 +114,5 @@ updateReferenceProfiles(reference_profiles = ioprofiles,
                         neg = mini_nsclc$neg, 
                         assay_type = "rna", 
                         bg = per.cell.bg,
-                        anchors = anchors)
-}
-\description{
-Update reference profiles using pre-specified anchor cells, or if no anchors
-are specified, by first choosing anchor cells
-}
-\examples{
-data("mini_nsclc")
-data("ioprofiles")
-counts <- mini_nsclc$counts
-astats <- get_anchor_stats(counts = mini_nsclc$counts,
- neg = Matrix::rowMeans(mini_nsclc$neg),
- profiles = ioprofiles)
+                        anchors = anchors) 
 }

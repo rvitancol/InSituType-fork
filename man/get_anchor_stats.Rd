@@ -53,5 +53,7 @@ data("ioprofiles")
 data("mini_nsclc")
 get_anchor_stats(counts = mini_nsclc$counts,
                  neg = Matrix::rowMeans(mini_nsclc$neg),
-                 profiles = ioprofiles)
+                 profiles = ioprofiles,
+                 sds=NULL, 
+                 assay_type = "RNA")
 }

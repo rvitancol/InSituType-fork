@@ -25,8 +25,6 @@ geoSketch(
 \item{returnBins}{determines whether or not to pass back bin labels for each cell}
 
 \item{minCellsPerBin}{the minimum number of cells required for a bin to be considered for sampling}
-
-\item{seed}{set seed for random sampling}
 }
 \value{
 sampledCells, a vector of cellIDs sampled using the geometric sketching method

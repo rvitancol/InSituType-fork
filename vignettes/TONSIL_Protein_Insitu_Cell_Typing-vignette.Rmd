@@ -33,8 +33,6 @@ This vignette demonstrates the use of the insitutype algorithm to cluster CosMx 
 ### Data preparation
 First, we load the package and access the example data. The tonsil protein data R object is a list including protein expression (`counts`), negative IgG expression (`neg`) in `tonsil_protein` R data file. The `tonsil_reference_profile` list object includes anchors(`anchors`) as a vector, mean reference profile(`mean.ref.profile`) and standard deviation reference profile (`SDs.ref.profile`) as matrices. 
 ```{r setup}
-devtools::load_all("/home/rstudio/sawoo/smidaSMICellTyping_SS_V2_1/",export_all=FALSE)
-# library(InSituType)
 data("tonsil_reference_profile")
 data("iocolors")
 data("tonsil_protein")

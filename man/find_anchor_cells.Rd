@@ -68,7 +68,9 @@ and then refine anchors based on umap projection.
 data("ioprofiles")
 data("mini_nsclc")
 sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
-find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], assay_type=assay_type,sds=NULL,
+find_anchor_cells(counts = mini_nsclc$counts[, sharedgenes], 
+                  assay_type="RNA", 
+                  sds=NULL,
                   neg = Matrix::rowMeans(mini_nsclc$neg),
                   profiles = ioprofiles)
 }

@@ -72,6 +72,6 @@ For a subset of the data, perform clustering under a range of cluster numbers.
 }
 \examples{
 data("mini_nsclc")
-chooseClusterNumber(mini_nsclc$counts, Matrix::rowMeans(mini_nsclc$neg),
+chooseClusterNumber(mini_nsclc$counts, Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA",
  n_clust = 2:5)
 }

@@ -2,17 +2,22 @@
 #' Update reference profiles
 #'
 #' Update reference profiles using pre-specified anchor cells, or if no anchors
-#' are specified, by first choosing anchor cells
+#' are specified, by first choosing anchor cells. Option to return reference 
+#' profiles rescaled for platform effect and/or to return further refitted profiles 
+#' based on the observed profiles of anchor cells.
+#' 
 #' @param reference_profiles Matrix of reference mean profiles, genes * cell types
+#' are specified, by first choosing anchor cells.
 #' @param reference_sds Matrix of standard deviation profiles, genes * cell types. Only for assay_type of protein.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
 #' @param assay_type Assay type of RNA, protein 
 #' @param bg Expected background
 #' @param nb_size The size parameter to assume for the NB distribution. Only for assay_type of RNA
-#' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
-#'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
-#'   and cell type names for cells to be held constant throughout iterations.
+#' @param anchors named vector giving "anchor" cell types with cell_id in names, 
+#' for use in semi-supervised clustering. Vector elements will be mainly NA's 
+#' (for non-anchored cells) and cell type names for cells to be held constant 
+#' throughout iterations.
 #' @param n_anchor_cells For semi-supervised learning. Maximum number of anchor
 #'   cells to use for each cell type.
 #' @param min_anchor_cosine For semi-supervised learning. Cells must have at
@@ -40,11 +45,13 @@
 #' data("mini_nsclc")
 #' data("ioprofiles")
 #' counts <- mini_nsclc$counts
-#' astats <- get_anchor_stats(counts = mini_nsclc$counts,
-#'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  profiles = ioprofiles)
-#' @return updated reference profiles
-#' # now choose anchors:
+#' astats <- get_anchor_stats(counts = mini_nsclc$counts, 
+#'                            assay_type="RNA", 
+#'                            neg = Matrix::rowMeans(mini_nsclc$neg),
+#'                            profiles = ioprofiles,
+#'                            sds=NULL)
+#' 
+#' now choose anchors:
 #' anchors <- choose_anchors_from_stats(counts = counts, 
 #'                                     neg = mini_nsclc$negmean, 
 #'                                     bg = per.cell.bg,
@@ -55,7 +62,8 @@
 #'                                     n_cells = 50, 
 #'                                     min_cosine = 0.4, 
 #'                                     min_scaled_llr = 0.03, 
-#'                                     insufficient_anchors_thresh = 5)
+#'                                     insufficient_anchors_thresh = 5,
+#'                                     assay_type="RNA")
 #'
 #' # The next step is to use the anchors to update the reference profiles:
 #'

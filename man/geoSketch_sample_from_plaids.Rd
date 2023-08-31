@@ -10,8 +10,6 @@ geoSketch_sample_from_plaids(Plaid, N)
 \item{Plaid}{Vector of cells' plaid IDs}
 
 \item{N}{desired sample size}
-
-\item{seed}{set seed for random sampling}
 }
 \value{
 Plaid, a named vector of binIDs where names correspond to cellIDs

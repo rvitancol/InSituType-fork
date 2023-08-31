@@ -167,7 +167,8 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
 #'  n_phase2 = 500,
 #'  n_phase3 = 2000,
 #'  n_starts = 1,
-#'  max_iters = 5
+#'  max_iters = 5,
+#'  assay_type="RNA",
 #' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
 #' Estep(counts = mini_nsclc$counts, clust = unsup$clust, neg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA")
 
@@ -297,7 +298,7 @@ nbclust <- function(counts,
   
   #### get initial profiles: ----------------------------------
   
-  if ((is.null(init_profiles) && is.null(init_clust))|(is.null(init_profiles) && is.null(init_sds) && is.null(init_clust)) ) {
+  if ((is.null(init_profiles) && is.null(init_clust)) || (is.null(init_profiles) && is.null(init_sds) && is.null(init_clust)) ) {
     stop("Must specify either init_clust or init_profiles")
   }
 

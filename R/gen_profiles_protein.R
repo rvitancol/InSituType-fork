@@ -18,10 +18,9 @@
 #' }
 
 gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, min.num.cells=30, keep_marker_proteins=FALSE){
-  library(dplyr)
-  library(data.table)
+
   if(is.null(sig_mat)){
-    sig_mat = fread(paste0(system.file("extdata", package="smiProtein"), "/default_signature_matrix.csv"))
+    sig_mat = data.table::fread(paste0(system.file("extdata", package="smiProtein"), "/default_signature_matrix.csv"))
   }
   markerProteins <- intersect(colnames(sig_mat), colnames(counts_raw))
   ## Split Lineage levels into columns
@@ -166,9 +165,6 @@ gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, m
 #' }
 
 gen_profiles_protein_annotation <- function(exp.mat, anno) {
-  
-  library(dplyr)
-  library(tibble)
   
   anno_ref_mat <- merge(exp.mat %>% as.data.frame() %>% rownames_to_column(var="cell_ID"), anno %>% dplyr::select(c(cell_ID, cellType)), by="cell_ID") %>% column_to_rownames(var="cell_ID")
   

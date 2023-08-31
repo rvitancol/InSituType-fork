@@ -35,7 +35,7 @@
 #' }
 #' @examples
 #' data("mini_nsclc")
-#' chooseClusterNumber(mini_nsclc$counts, Matrix::rowMeans(mini_nsclc$neg),
+#' chooseClusterNumber(mini_nsclc$counts, Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA",
 #'  n_clust = 2:5)
 
 chooseClusterNumber <-
@@ -116,7 +116,6 @@ chooseClusterNumber <-
                                xsd = tempclust$sds,
                                bg = bg,
                                size = nb_size,
-                               digits = digits,
                                assay_type = assay_type)
 
     total_loglik_this_clust <- sum(apply(loglik_thisclust, 1, max))

@@ -33,8 +33,6 @@ This vignette demonstrates the use of the insitutype algorithm to cluster CosMx 
 ### Data preparation
 First, we load the package and access the example data. The NSCLC RNA data R object is a list including RNA expression (`counts`), negative IgG expression (`neg`) in `mini_nsclc` R data file. The `ioprofile` a matrix reference profile. 
 ```{r setup}
-devtools::load_all("/home/rstudio/sawoo/smidaSMICellTyping_SS_V2_1/",export_all=FALSE)
-# library(InSituType)
 data("ioprofiles")
 data("iocolors")
 data("mini_nsclc")
