@@ -24,7 +24,12 @@ knitr::opts_chunk$set(
 ### Installation
 ```{r installation, eval=FALSE}
 
-# library(smidaSMICellTyping)
+# Install remotes package if necessary
+if (!require("remotes")) {
+  install.packages("remotes")
+}
+
+remotes::install_github("Nanostring-Biostats/InSituType")
 
 ```   
 ### Overview
@@ -33,6 +38,7 @@ This vignette demonstrates the use of the insitutype algorithm to cluster CosMx 
 ### Data preparation
 First, we load the package and access the example data. The NSCLC RNA data R object is a list including RNA expression (`counts`), negative IgG expression (`neg`) in `mini_nsclc` R data file. The `ioprofile` a matrix reference profile. 
 ```{r setup}
+library(InSituType)
 data("ioprofiles")
 data("iocolors")
 data("mini_nsclc")
