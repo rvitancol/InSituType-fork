@@ -30,7 +30,10 @@ Imports:
   utils,
   Rcpp (>= 1.0.9),
   uwot, 
-  fastglm
+  fastglm,
+  magrittr,
+  tibble,
+  dplyr
 License: NanoString Technologies, Inc. Software License Agreement for Non-Commercial Use
 Encoding: UTF-8
 LazyData: true

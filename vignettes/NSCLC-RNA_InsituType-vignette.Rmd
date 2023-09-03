@@ -107,7 +107,7 @@ The below command performs unsupervised clustering. We will let the algorithm tr
 
 ```{r unsup, echo=TRUE}
 unsup <- insitutype(
-  counts = counts,
+  x = counts,
   neg = negmean,
   assay_type = "RNA", 
   reference_profiles = NULL,
@@ -134,7 +134,7 @@ The below command performs supervised clustering. The user needs to provide `ref
 
 ```{r sup, echo=TRUE}
 sup <- insitutype(
-  counts = counts,
+  x = counts,
   neg = negmean,
   assay_type = "RNA", 
   n_clusts=0, 
@@ -163,7 +163,7 @@ The below command performs semi-supervised clustering. The anchor cells can be p
 
 ```{r semisup, echo=TRUE}
 semi_sup <- insitutype(
-  counts = counts,
+  x = counts,
   neg = negmean,
   assay_type = "RNA", 
   n_clusts=3, 
