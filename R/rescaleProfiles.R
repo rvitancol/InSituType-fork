@@ -45,6 +45,9 @@
 #' data("mini_nsclc")
 #' data("ioprofiles")
 #' counts <- mini_nsclc$counts
+#' ## estimate per-cell bg as a fraction of total counts:
+#' negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
+#' per.cell.bg <- rowSums(counts) * negmean.per.totcount
 #' astats <- get_anchor_stats(counts = mini_nsclc$counts, 
 #'                            assay_type="RNA", 
 #'                            neg = Matrix::rowMeans(mini_nsclc$neg),
