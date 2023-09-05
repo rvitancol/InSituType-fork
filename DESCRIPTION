@@ -19,6 +19,8 @@ Imports:
   ggplot2,
   graphics,
   grDevices,
+  graphics,
+  grDevices,
   irlba,
   lsa,
   magrittr,
@@ -26,7 +28,12 @@ Imports:
   mclust,
   methods,
   Rcpp (>= 1.0.9),
+  Rcpp (>= 1.0.9),
   rlang,
+  scales,
+  SingleCellExperiment,
+  sparseMatrixStats,
+  spatstat.geom,
   scales,
   SingleCellExperiment,
   sparseMatrixStats,
@@ -36,6 +43,7 @@ Imports:
   tibble,
   umap,
   utils,
+  uwot
   uwot
 License: NanoString Technologies, Inc. Software License Agreement for Non-Commercial Use
 Encoding: UTF-8
