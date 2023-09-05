@@ -92,7 +92,7 @@ astats <- get_anchor_stats(counts = mini_nsclc$counts,
                            profiles = ioprofiles,
                            sds=NULL)
 
-now choose anchors:
+# now choose anchors:
 anchors <- choose_anchors_from_stats(counts = counts, 
                                     neg = mini_nsclc$negmean, 
                                     bg = per.cell.bg,

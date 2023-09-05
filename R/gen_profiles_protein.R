@@ -12,7 +12,7 @@
 #' 
 #' @importFrom magrittr %>%
 #' @importFrom tibble rownames_to_column column_to_rownames
-#' @importFrom dplyr summarise_all group_by
+#' @importFrom dplyr summarise_all group_by filter
 #' @return A list, with the following elements:
 #' \enumerate{
 #' \item mean.ref.profile: a matrix of cluster-specific expression profiles. proteins x cell types
