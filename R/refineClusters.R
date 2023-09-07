@@ -145,6 +145,7 @@ refineClusters <- function(assay_type="RNA", merges = NULL, to_delete = NULL, su
   
   # re-calculate profiles if available:
   profiles <- NULL
+  sds <- NULL
   if (!is.null(counts) && !is.null(neg)) {
     profiles_info <- Estep(counts = counts,
                            clust = clust,

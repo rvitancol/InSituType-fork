@@ -2,15 +2,38 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' sum from negative binomial density function
-NULL
-
-#' sum from Gaussian density function
-NULL
-
+#'
+#' Probability density function of the negative binomial distribution (written in C++)
+#'
+#' @param mat dgCMatrix expression counts
+#' @param bgsub vector of background expression per cell
+#' @param x numeric expression for reference profiles
+#' @param bg numeric background level
+#' @param size_dnb int Dispersion parameter
+#'
+#' @return rowSums for matrix of densities
+#' @useDynLib InSituType, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @exportPattern "^[[:alpha:]]+" 
+#' @export
 lls_rna <- function(mat, bgsub, x, bg, size_dnb) {
     .Call('_InSituType_lls_rna', PACKAGE = 'InSituType', mat, bgsub, x, bg, size_dnb)
 }
 
+#' sum from Gaussian density function
+#'
+#' Probability density function of the Gaussian distribution (written in C++)
+#'
+#' @param mat dgCMatrix expression matrix
+#' @param bgsub vector of background expression per cell
+#' @param x numeric expression for reference profiles
+#' @param xsd numeric expression for reference SD profiles
+#' 
+#' @return rowSums for matrix of densities
+#' @useDynLib InSituType, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @exportPattern "^[[:alpha:]]+" 
+#' @export
 lls_protein <- function(mat, bgsub, x, xsd) {
     .Call('_InSituType_lls_protein', PACKAGE = 'InSituType', mat, bgsub, x, xsd)
 }

@@ -10,6 +10,9 @@
 #' @param min.num.cells a minimum number of cells each cell type to estimate its mean or SDs. default value is 30.
 #' @param keep_marker_proteins whether just marker proteins from the signature matrix is kept. default value is FALSE, which returns all proteins included in the data
 #' 
+#' @importFrom magrittr %>%
+#' @importFrom tibble rownames_to_column column_to_rownames
+#' @importFrom dplyr summarise_all group_by filter
 #' @return A list, with the following elements:
 #' \enumerate{
 #' \item mean.ref.profile: a matrix of cluster-specific expression profiles. proteins x cell types
@@ -36,7 +39,10 @@ gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, m
       sig_mat = InSituType::mouse_signature
     }
   }
+<<<<<<< HEAD
   
+=======
+>>>>>>> 7e38dd43d06694894426b2a3b400391c103e0a87
   markerProteins <- intersect(colnames(sig_mat), colnames(exp.mat))
   ## Split Lineage levels into columns
   sig_mat[is.na(sig_mat)] <- 0

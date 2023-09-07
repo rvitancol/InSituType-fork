@@ -38,6 +38,10 @@ bg <- Matrix::rowMeans(mini_nsclc$neg)
 genes <- intersect(dimnames(mini_nsclc$counts)[[2]], dimnames(ioprofiles)[[1]])
 mat <- mini_nsclc$counts[, genes]
 x <- ioprofiles[genes, ]
+<<<<<<< HEAD
 lldist(x = x, mat = mini_nsclc$counts, bg = bg, assay_type="RNA")
 
+=======
+lldist(x = x, mat = mini_nsclc$counts, bg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA")
+>>>>>>> 7e38dd43d06694894426b2a3b400391c103e0a87
 }
