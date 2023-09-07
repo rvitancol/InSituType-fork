@@ -404,7 +404,7 @@ There are two ways of identifying anchor cells and the following shows how to cr
 
 * manually chosen anchor cells: the user can identify anchor cells showing strong morphogogy marker signal using a visualization tool such as Napari or XY plots of expression data. 
 
-* signature matrix based anchor cells: signature matrix is an indicator of protein marker for each cell type. CELESTA cell typing tool already includes this signature matrix. If the user do not have its own signature matrix, the user can modify or utilize this default signature matrix from smiProtein package. Anchor cells are selected among different level of cell types in a nested way. For example, anchor cells for immune cell type are selected with 90%tile of CD45 expression level. And then B-cells or T-cells are selected based on CD19/CD20 or CD4/CD8. If some of chosen immune cells are overlapped with B-cells, these are excluded from immune cell type. 
+* signature matrix based anchor cells: signature matrix is an indicator of protein marker for each cell type. CELESTA cell typing tool already includes this signature matrix. If the user do not have its own signature matrix, the user can modify or utilize this default signature matrix from InsituType package. Anchor cells are selected among different level of cell types in a nested way. For example, anchor cells for immune cell type are selected with 90%tile of CD45 expression level. And then B-cells or T-cells are selected based on CD19/CD20 or CD4/CD8. If some of chosen immune cells are overlapped with B-cells, these are excluded from immune cell type. 
 
 Once anchor cells are selected or pre-defined by the user, protein expression matrix of those anchor cells each cell type is used to calculate its mean and SD. We repeat this practice across all cell types and the final outcome is matrices of mean expression profile and SD reference profile. These matrices includes cell types in columns and proteins in rows. 
 
@@ -419,8 +419,9 @@ tonsil_reference_profile <- gen_profiles_protein_annotation(exp.mat = tonsil_pro
 ## 2. Generate reference profiles based on its data set
 
 ```{r reference profile from its own data set}
-
-sig_mat = read.csv(paste0(system.file("extdata", package="smiProtein"), "/default_signature_matrix.csv"))
+data("human_signature")
+data("mouse_signature")
+sig_mat = InSituType::human_signature
 sig_mat_sub <- sig_mat[, c("celltype", "Lineage_level", "CD45", "CD20", "FN1", "CD31", "CD56", "CD11c", "CD8")]
 names(sig_mat_sub)[4] <- "CD19"
 sig_mat_sub <- sig_mat_sub[rowSums(sig_mat_sub[, -c(1:2)])!=0,]

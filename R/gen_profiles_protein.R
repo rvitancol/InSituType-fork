@@ -39,10 +39,7 @@ gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, m
       sig_mat = InSituType::mouse_signature
     }
   }
-<<<<<<< HEAD
-  
-=======
->>>>>>> 7e38dd43d06694894426b2a3b400391c103e0a87
+
   markerProteins <- intersect(colnames(sig_mat), colnames(exp.mat))
   ## Split Lineage levels into columns
   sig_mat[is.na(sig_mat)] <- 0
