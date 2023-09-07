@@ -17,7 +17,7 @@
 #' @exportPattern "^[[:alpha:]]+" 
 #' @export
 lls_rna <- function(mat, bgsub, x, bg, size_dnb) {
-    .Call('_InSituType_lls_rna', PACKAGE = 'InSituType', mat, bgsub, x, bg, size_dnb)
+    .Call(`_InSituType_lls_rna`, mat, bgsub, x, bg, size_dnb)
 }
 
 #' sum from Gaussian density function
@@ -35,6 +35,6 @@ lls_rna <- function(mat, bgsub, x, bg, size_dnb) {
 #' @exportPattern "^[[:alpha:]]+" 
 #' @export
 lls_protein <- function(mat, bgsub, x, xsd) {
-    .Call('_InSituType_lls_protein', PACKAGE = 'InSituType', mat, bgsub, x, xsd)
+    .Call(`_InSituType_lls_protein`, mat, bgsub, x, xsd)
 }
 
