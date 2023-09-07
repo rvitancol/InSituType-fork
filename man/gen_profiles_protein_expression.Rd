@@ -42,3 +42,11 @@ First, we rebuild a nested cell typing lists based on the 2-D signature matrix
 Second, we identify anchor cells ranked by their expression level for each cell type's protein marker
 Third, we estimate averaged expression level and SDs for proteins and cell types using the anchors
 }
+\examples{
+data("tonsil_protein")
+data("human_signature")
+data("mouse_signature")
+references <- gen_profiles_protein_expression(
+ exp.mat=tonsil_protein$counts,
+ sig_mat=NULL)
+}

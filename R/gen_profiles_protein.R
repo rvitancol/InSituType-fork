@@ -16,13 +16,28 @@
 #' \item SDs.ref.profile: a matrix of standard deviation profiles of pre-defined clusters. proteins x cell types
 #' \item anchors: a vector giving "anchor" cell types. Vector elements will be mainly NA's (for non-anchored cells)
 #' }
-
+#' @name gen_profiles_protein_expression
+#' @examples 
+#' data("tonsil_protein")
+#' data("human_signature")
+#' data("mouse_signature")
+#' references <- gen_profiles_protein_expression(
+#'  exp.mat=tonsil_protein$counts,
+#'  sig_mat=NULL)
 gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, min.num.cells=30, keep_marker_proteins=FALSE){
 
   if(is.null(sig_mat)){
-    sig_mat = data.table::fread(paste0(system.file("extdata", package="smiProtein"), "/default_signature_matrix.csv"))
+
+    ## call the human's signature matrix
+    sig_mat = InSituType::human_signature
+    
+    ## If the panel is for mouse, we call the mouse's signature matrix
+    if(length(intersect(names(sig_mat), names(exp.mat)) == 0)){
+      sig_mat = InSituType::mouse_signature
+    }
   }
-  markerProteins <- intersect(colnames(sig_mat), colnames(counts_raw))
+  
+  markerProteins <- intersect(colnames(sig_mat), colnames(exp.mat))
   ## Split Lineage levels into columns
   sig_mat[is.na(sig_mat)] <- 0
   sig_mat$level1 <- lapply(strsplit(sig_mat$Lineage_level, "_"), function(x){x[1]}) %>% unlist()
@@ -76,7 +91,6 @@ gen_profiles_protein_expression <- function(exp.mat, sig_mat=NULL, cutoff=0.9, m
             }
           }
           
-          # tempMar <- markerProtein_celltype_level[[i-1]] %>% filter(celltype==markerProtein_celltype_level[[i]]$upper_celltype[1])
           tempD <- exp.mat[rownames(exp.mat) %in% dat_mat_level[[idx_k]][[tempMar$celltype]], ]
           
           if(max(exp.mat)<=1){

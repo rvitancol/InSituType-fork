@@ -31,3 +31,13 @@ cells x profiles matrix of log likelihoods
 Calculate the likelihood of the expression mat
   using the reference profiles of x
 }
+\examples{
+data("mini_nsclc")
+data("ioprofiles")
+bg <- Matrix::rowMeans(mini_nsclc$neg)
+genes <- intersect(dimnames(mini_nsclc$counts)[[2]], dimnames(ioprofiles)[[1]])
+mat <- mini_nsclc$counts[, genes]
+x <- ioprofiles[genes, ]
+lldist(x = x, mat = mini_nsclc$counts, bg = bg, assay_type="RNA")
+
+}

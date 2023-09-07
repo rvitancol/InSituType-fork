@@ -21,8 +21,10 @@
 #' genes <- intersect(dimnames(mini_nsclc$counts)[[2]], dimnames(ioprofiles)[[1]])
 #' mat <- mini_nsclc$counts[, genes]
 #' x <- ioprofiles[genes, ]
-#' lldist(x = x, mat = mini_nsclc$counts, bg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA)
-  lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type) {
+#' lldist(x = x, mat = mini_nsclc$counts, bg = bg, assay_type="RNA")
+#' 
+
+lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type) {
   # convert to matrix form if only a vector was input:
   if (is.vector(mat)) {
     mat <- as(matrix(mat, nrow = 1), "dgCMatrix")
