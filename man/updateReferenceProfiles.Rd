@@ -6,8 +6,10 @@
 \usage{
 updateReferenceProfiles(
   reference_profiles,
+  reference_sds,
   counts,
   neg,
+  assay_type,
   bg = NULL,
   nb_size = 10,
   anchors = NULL,
@@ -22,15 +24,20 @@ updateReferenceProfiles(
 )
 }
 \arguments{
-\item{reference_profiles}{Matrix of reference profiles, genes * cell types}
+\item{reference_profiles}{Matrix of reference mean profiles, genes * cell types
+are specified, by first choosing anchor cells.}
+
+\item{reference_sds}{Matrix of standard deviation profiles, genes * cell types. Only for assay_type of protein.}
 
 \item{counts}{Counts matrix, cells * genes.}
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
+\item{assay_type}{Assay type of RNA, protein}
+
 \item{bg}{Expected background}
 
-\item{nb_size}{The size parameter to assume for the NB distribution.}
+\item{nb_size}{The size parameter to assume for the NB distribution. Only for assay_type of RNA}
 
 \item{anchors}{named vector giving "anchor" cell types with cell_id in names, 
 for use in semi-supervised clustering. Vector elements will be mainly NA's 
@@ -79,13 +86,14 @@ based on the observed profiles of anchor cells.
 data("mini_nsclc")
 data("ioprofiles")
 counts <- mini_nsclc$counts
-astats <- get_anchor_stats(counts = mini_nsclc$counts,
- neg = Matrix::rowMeans(mini_nsclc$neg),
- profiles = ioprofiles)
-
-# estimate per-cell bg as a fraction of total counts:
+## estimate per-cell bg as a fraction of total counts:
 negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
 per.cell.bg <- rowSums(counts) * negmean.per.totcount
+astats <- get_anchor_stats(counts = mini_nsclc$counts, 
+                           assay_type="RNA", 
+                           neg = Matrix::rowMeans(mini_nsclc$neg),
+                           profiles = ioprofiles,
+                           sds=NULL)
 
 # now choose anchors:
 anchors <- choose_anchors_from_stats(counts = counts, 
@@ -98,13 +106,16 @@ anchors <- choose_anchors_from_stats(counts = counts,
                                     n_cells = 50, 
                                     min_cosine = 0.4, 
                                     min_scaled_llr = 0.03, 
-                                    insufficient_anchors_thresh = 5)
+                                    insufficient_anchors_thresh = 5,
+                                    assay_type="RNA")
 
 # The next step is to use the anchors to update the reference profiles:
 
-updateReferenceProfiles(reference_profiles = ioprofiles, 
-                       counts = mini_nsclc$counts, 
-                       neg = mini_nsclc$neg, 
-                       bg = per.cell.bg,
-                       anchors = anchors) 
+updateReferenceProfiles(reference_profiles = ioprofiles,
+                        reference_sds = NULL,
+                        counts = mini_nsclc$counts, 
+                        neg = mini_nsclc$neg, 
+                        assay_type = "rna", 
+                        bg = per.cell.bg,
+                        anchors = anchors) 
 }

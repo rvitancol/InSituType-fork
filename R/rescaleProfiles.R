@@ -5,11 +5,15 @@
 #' are specified, by first choosing anchor cells. Option to return reference 
 #' profiles rescaled for platform effect and/or to return further refitted profiles 
 #' based on the observed profiles of anchor cells.
-#' @param reference_profiles Matrix of reference profiles, genes * cell types
+#' 
+#' @param reference_profiles Matrix of reference mean profiles, genes * cell types
+#' are specified, by first choosing anchor cells.
+#' @param reference_sds Matrix of standard deviation profiles, genes * cell types. Only for assay_type of protein.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
+#' @param assay_type Assay type of RNA, protein 
 #' @param bg Expected background
-#' @param nb_size The size parameter to assume for the NB distribution.
+#' @param nb_size The size parameter to assume for the NB distribution. Only for assay_type of RNA
 #' @param anchors named vector giving "anchor" cell types with cell_id in names, 
 #' for use in semi-supervised clustering. Vector elements will be mainly NA's 
 #' (for non-anchored cells) and cell type names for cells to be held constant 
@@ -41,14 +45,15 @@
 #' data("mini_nsclc")
 #' data("ioprofiles")
 #' counts <- mini_nsclc$counts
-#' astats <- get_anchor_stats(counts = mini_nsclc$counts,
-#'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  profiles = ioprofiles)
-#'
-#' # estimate per-cell bg as a fraction of total counts:
+#' ## estimate per-cell bg as a fraction of total counts:
 #' negmean.per.totcount <- mean(rowMeans(mini_nsclc$neg)) / mean(rowSums(counts))
 #' per.cell.bg <- rowSums(counts) * negmean.per.totcount
-#'
+#' astats <- get_anchor_stats(counts = mini_nsclc$counts, 
+#'                            assay_type="RNA", 
+#'                            neg = Matrix::rowMeans(mini_nsclc$neg),
+#'                            profiles = ioprofiles,
+#'                            sds=NULL)
+#' 
 #' # now choose anchors:
 #' anchors <- choose_anchors_from_stats(counts = counts, 
 #'                                     neg = mini_nsclc$negmean, 
@@ -60,19 +65,25 @@
 #'                                     n_cells = 50, 
 #'                                     min_cosine = 0.4, 
 #'                                     min_scaled_llr = 0.03, 
-#'                                     insufficient_anchors_thresh = 5)
+#'                                     insufficient_anchors_thresh = 5,
+#'                                     assay_type="RNA")
 #'
 #' # The next step is to use the anchors to update the reference profiles:
 #'
-#' updateReferenceProfiles(reference_profiles = ioprofiles, 
-#'                        counts = mini_nsclc$counts, 
-#'                        neg = mini_nsclc$neg, 
-#'                        bg = per.cell.bg,
-#'                        anchors = anchors) 
+#' updateReferenceProfiles(reference_profiles = ioprofiles,
+#'                         reference_sds = NULL,
+#'                         counts = mini_nsclc$counts, 
+#'                         neg = mini_nsclc$neg, 
+#'                         assay_type = "rna", 
+#'                         bg = per.cell.bg,
+#'                         anchors = anchors) 
+
 updateReferenceProfiles <-
   function(reference_profiles,
+           reference_sds,
            counts,
            neg,
+           assay_type, 
            bg = NULL,
            nb_size = 10,
            anchors = NULL,
@@ -103,7 +114,9 @@ updateReferenceProfiles <-
                                    neg = neg, 
                                    bg = bg, 
                                    profiles = reference_profiles[sharedgenes, ], 
+                                   sds = reference_sds[sharedgenes, ], 
                                    size = nb_size, 
+                                   assay_type = assay_type,
                                    n_cells = n_anchor_cells, 
                                    min_cosine = min_anchor_cosine, 
                                    min_scaled_llr = min_anchor_llr,
@@ -154,7 +167,8 @@ updateReferenceProfiles <-
                                                        neg = neg, 
                                                        bg = bg, 
                                                        anchors = anchors,
-                                                       profiles = reference_profiles[sharedgenes, ])
+                                                       profiles = reference_profiles[sharedgenes, ],
+                                                       sds = reference_sds[sharedgenes, ])
       
       # add outliers from platform effect estimation, but exclude lostgenes
       blacklist <- unique(c(blacklist, outs[['rescale_res']][['blacklist']]))
@@ -166,6 +180,12 @@ updateReferenceProfiles <-
         # add lostgenes with beta =1  back to updated profiles 
         outs[['updated_profiles']] <- rbind(outs[['rescale_res']][['rescaled_profiles']], 
                                             reference_profiles[outs[['rescale_res']][['lostgenes']], ]) 
+        outs[['updated_sds']] <- rbind(outs[['rescale_res']][['rescaled_sds']], 
+                                            reference_sds[outs[['rescale_res']][['lostgenes']], ]) 
+      }else{
+        outs[['updated_profiles']] <- outs[['rescale_res']][['rescaled_profiles']]
+        outs[['updated_sds']] <- outs[['rescale_res']][['rescaled_sds']]
+        
       }
     }
     
@@ -177,11 +197,13 @@ updateReferenceProfiles <-
                                           neg = neg, 
                                           bg = bg, 
                                           profiles = outs[['updated_profiles']][sharedgenes, ], 
+                                          sds = outs[['updated_sds']][sharedgenes, ], 
                                           size = nb_size, 
                                           n_cells = n_anchor_cells, 
                                           min_cosine = min_anchor_cosine, 
                                           min_scaled_llr = min_anchor_llr,
                                           insufficient_anchors_thresh = insufficient_anchors_thresh, 
+                                          assay_type=assay_type,
                                           align_genes = FALSE, 
                                           refinement = refinement) 
       if (is.null(anchors_second)){
@@ -210,17 +232,15 @@ updateReferenceProfiles <-
     ## step 4: refit the reference profiles using the second around of anchors 
     if(refit){
       # refit original reference profiles given the anchors, will include lostgenes from platform effect estimation  
-      refitted_profiles <- updateProfilesFromAnchors(counts = counts[, sharedgenes],  
+      refitted_profiless <- updateProfilesFromAnchors(counts = counts[, sharedgenes],  
                                                      neg = neg, 
                                                      bg = bg,
-                                                     anchors = anchors, 
-                                                     reference_profiles = reference_profiles[sharedgenes, ],
-                                                     align_genes = FALSE, 
-                                                     nb_size = nb_size)
-      outs[['refit_res']] <- list(refitted_profiles = refitted_profiles, 
+                                                     anchors = anchors,
+                                                     assay_type=assay_type)
+      outs[['refit_res']] <- list(refitted_profiles = refitted_profiless$updated_profiles, 
                                   anchors = anchors)
-      outs[['updated_profiles']] <- refitted_profiles
-      
+      outs[['updated_profiles']] <- refitted_profiless$updated_profiles
+      outs[['updated_sds']] <- refitted_profiless$updated_sds
     }
     
     outs[['blacklist']] <- blacklist
@@ -241,35 +261,31 @@ updateReferenceProfiles <-
 #' @param neg Vector of mean negprobe counts per cell. Can be provided
 #' @param bg Expected background
 #' @param anchors Vector of anchor assignments
-#' @param reference_profiles Matrix of expression profiles of pre-defined
-#'   clusters, e.g. from previous scRNA-seq. These profiles will not be updated
-#'   by the EM algorithm. Colnames must all be included in the init_clust
-#'   variable.
-#' @param align_genes Logical, for whether to align the counts matrix and the
-#'   reference_profiles by gene ID.
-#' @param nb_size The size parameter to assume for the NB distribution.
-#' @param max_rescaling Scaling factors will be truncated above by this value
-#'   and below by its inverse (at 1/value and value)
-#' @return \enumerate{ \item profiles: A profiles matrix with the rows rescaled
-#' according to platform effects and individual elements updated further \item
-#' scaling_factors: A vector of genes' scaling factors (what they were
-#' multiplied by when updating the reference profiles). }
+#' @param assay_type Assay type of RNA, protein 
+#' 
+#' @return \enumerate{ 
+#' \item updated_profiles: A mean profiles matrix with the rows rescaled
+#' according to platform effects and individual elements updated further 
+#' \item updated_sds: A mean profiles matrix with the rows rescaled
+#' according to platform effects and individual elements updated further}
 #' @export
 updateProfilesFromAnchors <-
   function(counts,
            neg,
            bg = NULL, 
-           anchors,
-           reference_profiles,
-           align_genes = TRUE,
-           nb_size = 10,
-           max_rescaling = 5) {
+           assay_type,
+           anchors) {
     bg <- estimateBackground(counts, neg, bg)
     use <- !is.na(anchors)
-    updated_profiles <- Estep(counts = counts[use, ],
-                              clust = anchors[use],
-                              neg = bg[use])
-    return(updated_profiles)
+    updated_profiles_info <- Estep(counts = counts[use, ],
+                          clust = anchors[use],
+                          neg = bg[use], 
+                          assay_type=assay_type)
+    updated_profiles <- updated_profiles_info$profiles
+    updated_sds <- updated_profiles_info$sds
+    
+    return(list(updated_profiles=updated_profiles, 
+                updated_sds=updated_sds))
   }
 
 
@@ -305,6 +321,7 @@ estimatePlatformEffects <-
            bg=NULL, 
            anchors, 
            profiles,
+           sds=NULL,
            blacklist=NULL){
     
     #### Step1: clean up and prepare inputs, focus on anchors only
@@ -326,6 +343,8 @@ estimatePlatformEffects <-
     counts <- alignGenes(counts = counts[names(anchors), ], 
                              profiles = profiles)
     profiles <- profiles[colnames(counts), ]
+    sds <- sds[colnames(counts), ]
+    
     ## group shared genes based on their expression level in obs vs. ref
     # (1) ok ref & above-zero obs, evaluate in glm; 
     # (2) ok ref but near-zero obs, add to blacklist as outliers; 
@@ -333,7 +352,12 @@ estimatePlatformEffects <-
     # (4) near-zero ref but low obs, add to lostgenes. 
     
     # dense array for net count, high memory consumption  
-    netCount_data <- pmax(counts - bg[names(anchors)], 0)
+    if(assay_type %in% c("RNA", "rna", "Rna")){
+      netCount_data <- pmax(counts - bg[names(anchors)], 0)
+    }
+    if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+      netCount_data <- counts 
+    }
     netAvg_perCT <- sapply(cts_to_check, function(ct){
       Matrix::colMeans(netCount_data[anchors == ct, , drop = F], na.rm = T)
     })
@@ -374,6 +398,7 @@ estimatePlatformEffects <-
     use_genes <- geneDF$Gene[geneDF$ok_ref & geneDF$pos_net]
     counts <- counts[,use_genes, drop = F]
     profiles <- profiles[use_genes, ]
+    sds <- sds[use_genes, ]
     if(ncol(counts)<1){
       stop("No shared genes with sufficient count for platform evaluation.")
     }
@@ -400,10 +425,19 @@ estimatePlatformEffects <-
     # fastglm estimation with method = 3L to allow non-positive definite matrices 
     percentCores <- 0.25
     PlatformEstimator_fastGLM <- function(df){
-      GLM_Fit<- fastglm::fastglm(x = model.matrix(~Reference : Cell_SF -1, data = df), 
-                                 y = df$Counts, offset = df$BG, 
-                                 family= stats::poisson(link = "identity"),
-                                 start=c(0), method = 3L)
+      if(assay_type %in% c("RNA", "Rna")){
+        GLM_Fit<- fastglm::fastglm(x = model.matrix(~Reference : Cell_SF -1, data = df), 
+                                   y = df$Counts, offset = df$BG, 
+                                   family= stats::poisson(link = "identity"),
+                                   start=c(0), method = 3L)
+      }
+      if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+        GLM_Fit<- fastglm::fastglm(x = model.matrix(~Reference : Cell_SF -1, data = df), 
+                                   y = df$Counts, # offset = df$BG, 
+                                   family= stats::gaussian(link = "identity"),
+                                   start=c(0), method = 3L)
+      }
+
       return(data.frame(Gene=df$Gene[1],
                         Beta=GLM_Fit$coefficients["Reference:Cell_SF"],
                         beta_SE=summary(GLM_Fit)$coefficients["Reference:Cell_SF","Std. Error"]))
@@ -434,8 +468,12 @@ estimatePlatformEffects <-
     rownames(PlatformEff) <- PlatformEff$Gene
     rescaled_profiles <- diag(PlatformEff[genes_to_keep,]$Beta) %*% profiles[genes_to_keep,]
     rownames(rescaled_profiles) <- genes_to_keep
+
+    rescaled_sds <- diag(PlatformEff[genes_to_keep,]$Beta) %*% sds[genes_to_keep,]
+    rownames(rescaled_sds) <- genes_to_keep
     
     return(list(rescaled_profiles = rescaled_profiles,
+                rescaled_sds = rescaled_sds,
                 platformEff_statsDF = PlatformEff,
                 anchors = anchors,
                 blacklist = blacklist,

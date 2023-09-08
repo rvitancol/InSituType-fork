@@ -10,6 +10,7 @@ estimatePlatformEffects(
   bg = NULL,
   anchors,
   profiles,
+  sds = NULL,
   blacklist = NULL
 )
 }

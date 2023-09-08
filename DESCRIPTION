@@ -1,8 +1,9 @@
 Package: InSituType
 Type: Package
 Title: An R package for performing cell typing in SMI and other single cell data
-Version: 1.1.1
+Version: 1.2.0
 Authors@R: c(person("Patrick", "Danaher", email = "pdanaher@nanostring.com", role = c("aut")),
+             person("Sangsoon", "Woo", email = "sawoo@nanostring.com", role = c("aut")),
              person("Zhi", "Yang", email = "zyang@nanostring.com", role = c("aut")),
              person("David", "Ross", email = "dross@nanostring.com", role = c("aut", "cre")),
              person("Lidan", "Wu", email = "lwu@nanostring.com", role = c("aut")),
@@ -14,12 +15,14 @@ Description: Insitutype is an algorithm for performing cell typing in single cel
              clusters are fit. 
 Imports:
   data.table,
+  dplyr,
   fastglm,
   ggplot2,
   graphics,
   grDevices,
   irlba,
   lsa,
+  magrittr,
   Matrix,
   mclust,
   methods,
@@ -31,6 +34,7 @@ Imports:
   spatstat.geom,
   stats,
   SummarizedExperiment,
+  tibble,
   umap,
   utils,
   uwot
