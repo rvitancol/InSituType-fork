@@ -1,3 +1,7 @@
+# InSituType 1.2.0
+
+* Also cluster continuous data from protein assay
+
 # InSituType 1.1.1
 
 * Support platform effect correction
