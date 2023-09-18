@@ -1,14 +1,10 @@
 trigger:
   branches:
     include:
-      - dev
+      - sbs-dev-1.3
 
 resources:
 - repo: self
-
-variables:
-  isDevelop: ${{eq(variables['Build.SourceBranch'], 'refs/heads/dev')}}
-  group: smida-build-pipeline-devnext-variables
 
 stages:
 - stage: Build
