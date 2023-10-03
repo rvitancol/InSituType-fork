@@ -1,7 +1,42 @@
+# NanoString Technologies, Inc.
+# Software License Agreement for Non-Commercial Use
+# By downloading, installing, accessing, modifying or otherwise making use of the Program (defined below), you agree to be bound by the terms and conditions of this Software License Agreement for Non-Commercial Use (this “License”).
+# 1.	DEFINITIONS
+# 1.1.	“Affiliate” means, with respect to an individual or entity, another individual or entity: (i) on whose behalf such individual or entity is acting, or (ii) that exercises control, is controlled by, or is under common control with such individual or entity. For the purposes of this definition, the term “control” means the right, whether by ownership, exercise of voting rights, contract, or otherwise, to direct the actions of an individual or entity.
+# 1.2.	“Distribute” means to distribute, share, make available, or otherwise provide the Program or Modified Program, as applicable, or access thereto (including via a computer network) to any third party.
+# 1.3.	“Licensor” means the individual or entity licensing the rights granted in this License.
+# 1.4.	“Licensee” or “you” means the individual or entity receiving or exercising the rights granted under this License, provided that the individual or entity is not a NanoString Competitor.
+# 1.5.	“Non-Commercial Use” means any use where profit or other commercial benefit is not a direct or indirect motive or intended result.
+# 1.6.	“Modified Program” means a derivative work of, or a work that is based on, uses or incorporates, the Program (whether or not in combination with other works, materials or content).
+# 1.7.	“NanoString” means NanoString Technologies, Inc.
+# 1.8.	“NanoString Competitor” means any individual or entity that directly or indirectly competes with NanoString or any of NanoString’s Affiliates or whose Affiliate directly or indirectly competes with NanoString or any of NanoString’s Affiliates.
+# 1.9.	“Program” means the copyrightable work of authorship, program, code, or software licensed under this License.
+# 2.	LICENSE 
+# 2.1.	Grant. Subject to the terms and conditions of this License, Licensor hereby grants to Licensee a worldwide, royalty-free, non-exclusive, revocable license to: (a) use, Distribute, and reproduce the Program, and (b) use, create, Distribute, and reproduce Modified Programs, in each case, solely for your internal, Non-Commercial Use. No rights are granted to NanoString Competitors.
+# 2.2.	No Endorsement. Nothing in this License may be construed as permission to assert or imply that Licensor, NanoString, or other contributors to the Program sponsors, endorses, or is otherwise connected with the Licensee or the entity or institution that Licensee represents.
+# 2.3.	Trademarks. Trademark rights are not licensed to you under this License.
+# 2.4.	Grant of Patent License. Subject to the terms and conditions of this License, NanoString hereby grants to you a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable (except as stated in this section) patent license to make, have made, use, import, and otherwise transfer the Program, where such license applies only to those patent claims licensable by NanoString that are necessarily infringed by Licensee alone or by combination of its modification(s) to the Program or Modified Program to which such modification(s) was submitted. If you institute patent litigation against any entity (including a cross-claim or counterclaim in a lawsuit) alleging that the Program, Modified Program, or a modification incorporated within the Program or a Modified Program constitutes direct or contributory patent infringement, then any patent licenses granted to you under this License for the Program or any such Modified Program shall terminate as of the date such litigation is filed.
+# 3.	CONDITIONS TO THE RIGHT TO DISTRIBUTE
+# 3.1.	Notices. If you Distribute the Program or a Modified Program in any form, you must also provide to the recipient:
+# 3.1.1.	a copy of this License; and 
+# 3.1.2.	for Modified Programs, prominent notices identifying the portions of the Modified Program that have been modified, stating that you have modified the Program.
+# 3.2.	Attribution. Except as otherwise expressly permitted under this License, you must keep intact, and you may not modify or remove, any notices, disclaimers, or attributions included in or provided with the Program. In addition, you must also include a prominent hypertext link back to NanoString’s website at www.nanostring.com. 
+# 3.3.	License. You may only Distribute the Program or the Modified Program under the terms of this License (or any later version, at your election). You may not offer or impose any additional or different terms or conditions that, or take any measures to, restrict the exercise of the rights granted under this License.
+# 4.	NO REPRESENTATIONS OR WARRANTIES; LIMITATIONS OF LIABILITY
+# 4.1.	Disclaimer. UNLESS OTHERWISE AGREED BY LICENSOR IN WRITING, TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, LICENSOR OFFERS THE PROGRAM AS-IS AND MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND WITH REGARD TO THE PROGRAM, WHETHER EXPRESS, IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. THE LICENSOR DOES NOT REPRESENT OR WARRANT THAT THE PROGRAM WILL BE ERROR FREE AND DOES NOT PROMISE THAT ANY SUCH ERRORS WILL BE CORRECTED.
+# SOME JURISDICTIONS DO NOT ALLOW FOR THE EXCLUSION OF IMPLIED WARRANTIES, SO THE FOREGOING MAY NOT APPLY TO YOU.
+# 4.2.	Limitation of Liability. TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL THE LICENSOR OR NANOSTRING BE LIABLE TO YOU UNDER ANY LEGAL THEORY FOR ANY DAMAGES OF ANY KIND, INCLUDING ANY SPECIAL, INCIDENTAL, CONSEQUENTIAL, PUNITIVE OR EXEMPLARY DAMAGES ARISING OUT OF OR RELATED TO THE PROGRAM OR USE THEREOF, EVEN IF LICENSOR OR NANOSTRING HAS BEEN ADVISED OF THE POSSIBILITY OR LIKELIHOOD OF SUCH DAMAGES.
+# 5.	MISCELLANEOUS
+# 5.1.	Right to Enforce. NanoString is an express third-party beneficiary of this License and will be entitled to enforce the provisions of this License as if it were a party hereto. 
+# 5.2.	Waiver; Amendment. No term or provision hereof will be considered waived by the Licensor, and no breach excused by Licensor, unless such waiver or consent is in writing and signed by an authorized representative of Licensor.  The waiver by Licensor of, or consent by Licensor to, a breach of any provision of this License by the Licensee, will not constitute, operate or be construed as a waiver of, consent to, or excuse of any other or subsequent breach by Licensee.  This License may be amended or modified only by an agreement in writing signed by an authorized representative of each of Licensor and Licensee.
+
 #' Run insitutype.
 #'
 #' A wrapper for nbclust, to manage subsampling and multiple random starts.
-#' @param counts Counts matrix (or dgCMatrix), cells * genes.
+#' @param x Counts matrix (or dgCMatrix), cells * genes.
+#'
+#'   Alternatively, a \linkS4class{SingleCellExperiment} object containing such
+#'   a matrix.
 #' @param neg Vector of mean negprobe counts per cell
 #' @param bg Expected background
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
@@ -54,10 +89,9 @@
 #'   anchor
 #' @param insufficient_anchors_thresh Cell types that end up with fewer than
 #'   this many anchors after anchor selection will be discarded.
-#' @importFrom stats lm
-#' @importFrom Matrix rowMeans
-#' @importFrom Matrix colSums
-#' @export
+#' @param ... For the \linkS4class{SingleCellExperiment} method, additional
+#'   arguments to pass to the ANY method.
+#' @param assay.type A string specifying which assay values to use.
 #' @return A list, with the following elements: \enumerate{ \item clust: a
 #'   vector given cells' cluster assignments \item prob: a vector giving the
 #'   confidence in each cell's cluster \item logliks: Matrix of cells'
@@ -65,7 +99,28 @@
 #'   \item profiles: a matrix of cluster-specific expression profiles \item
 #'   anchors: from semi-supervised clustering: a vector giving the identifies
 #'   and cell types of anchor cells }
-insitutype <- function(counts,
+#'
+#' @name insitutype
+#' @examples 
+#' data("mini_nsclc")
+#' unsup <- insitutype(
+#'  x = mini_nsclc$counts,
+#'  neg = Matrix::rowMeans(mini_nsclc$neg),
+#'  n_clusts = 8,
+#'  n_phase1 = 200,
+#'  n_phase2 = 500,
+#'  n_phase3 = 2000,
+#'  n_starts = 1,
+#'  max_iters = 5
+#' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
+#' table(unsup$clust)
+NULL
+
+#' @importFrom stats lm
+#' @importFrom Matrix rowMeans
+#' @importFrom Matrix colSums
+#' @importFrom Matrix t
+.insitutype <- function(x,
                        neg,
                        bg = NULL,
                        anchors = NULL,
@@ -94,15 +149,15 @@ insitutype <- function(counts,
   
   #### preliminaries ---------------------------
   
-  if (any(rowSums(counts) == 0)) {
+  if (any(rowSums(x) == 0)) {
     stop("Cells with 0 counts were found. Please remove.")
   }
   
   ## get neg in condition 
   if (is.null(names(neg))) {
-    names(neg) <- rownames(counts)
+    names(neg) <- rownames(x)
   }
-  if (length(neg) != nrow(counts)) {
+  if (length(neg) != nrow(x)) {
     stop("length of neg should equal nrows of counts.")
   }
   
@@ -112,14 +167,14 @@ insitutype <- function(counts,
   
   ### infer bg if not provided: assume background is proportional to the scaling factor s
   if (is.null(bg)) {
-    s <- Matrix::rowMeans(counts)
+    s <- Matrix::rowMeans(x)
     bgmod <- stats::lm(neg ~ s - 1)
     bg <- bgmod$fitted
-    names(bg) <- rownames(counts)
+    names(bg) <- rownames(x)
   }
   if (length(bg) == 1) {
-    bg <- rep(bg, nrow(counts))
-    names(bg) <- rownames(counts)
+    bg <- rep(bg, nrow(x))
+    names(bg) <- rownames(x)
   }
   
   #### update reference profiles ----------------------------------
@@ -127,7 +182,7 @@ insitutype <- function(counts,
   if (!is.null(reference_profiles)) {
     if (update_reference_profiles) {
       update_result <- updateReferenceProfiles(reference_profiles,
-                                               counts = counts, 
+                                               counts = x, 
                                                neg = neg,
                                                bg = bg,
                                                nb_size = nb_size,
@@ -143,11 +198,11 @@ insitutype <- function(counts,
   }
   # align the genes from fixed_profiles and counts
   if (align_genes && !is.null(fixed_profiles)) {
-    sharedgenes <- intersect(rownames(fixed_profiles), colnames(counts))
-    lostgenes <- setdiff(colnames(counts), rownames(fixed_profiles))
+    sharedgenes <- intersect(rownames(fixed_profiles), colnames(x))
+    lostgenes <- setdiff(colnames(x), rownames(fixed_profiles))
     
     # subset to only the shared genes:
-    counts <- counts[, sharedgenes]
+    x <- x[, sharedgenes]
     fixed_profiles <- fixed_profiles[sharedgenes, ]
     
     # warn about genes being lost:
@@ -166,18 +221,18 @@ insitutype <- function(counts,
   # (e.g., if PCA is the choice, then point to existing PCA results, and run PCA if not available
   if (!is.null(sketchingdata)) {
     # check that it's correct:
-    if (nrow(sketchingdata) != nrow(counts)) {
+    if (nrow(sketchingdata) != nrow(x)) {
       warning("counts and sketchingdata have different numbers of row. Discarding sketchingdata.")
       sketchingdata <- NULL
     }
   }
   if (is.null(sketchingdata)) {
-    sketchingdata <- prepDataForSketching(counts)
+    sketchingdata <- prepDataForSketching(x)
   }
-  n_phase1 <- min(n_phase1, nrow(counts))
-  n_phase2 <- min(n_phase2, nrow(counts))
-  n_phase3 <- min(n_phase3, nrow(counts))
-  n_benchmark_cells <- min(n_benchmark_cells, nrow(counts))
+  n_phase1 <- min(n_phase1, nrow(x))
+  n_phase2 <- min(n_phase2, nrow(x))
+  n_phase3 <- min(n_phase3, nrow(x))
+  n_benchmark_cells <- min(n_benchmark_cells, nrow(x))
   
   # define sketching "Plaids" (rough clusters) for subsampling:
   plaid <- geoSketch_get_plaid(X = sketchingdata, 
@@ -185,8 +240,7 @@ insitutype <- function(counts,
                                 alpha=0.1,
                                 max_iter=200,
                                 returnBins=FALSE,
-                                minCellsPerBin = 1,
-                                seed=NULL)
+                                minCellsPerBin = 1)
   
   #### choose cluster number: -----------------------------
   if (!is.null(init_clust)) {
@@ -204,11 +258,10 @@ insitutype <- function(counts,
     message("Selecting optimal number of clusters from a range of ", min(n_clusts), " - ", max(n_clusts))
 
     chooseclusternumber_subset <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                               N = min(n_chooseclusternumber, nrow(counts)),
-                                                               seed = NULL)
+                                                               N = min(n_chooseclusternumber, nrow(x)))
     
     n_clusts <- chooseClusterNumber(
-      counts = counts[chooseclusternumber_subset, ], 
+      counts = x[chooseclusternumber_subset, ], 
       neg = neg[chooseclusternumber_subset], 
       bg = bg[chooseclusternumber_subset], 
       fixed_profiles = reference_profiles,
@@ -224,8 +277,8 @@ insitutype <- function(counts,
   if (!is.null(init_clust)) {
     message("init_clust was provided, so phase 1 - random starts in small subsets - will be skipped.")
     
-    tempprofiles <- sapply(by(counts[!is.na(init_clust), ], init_clust[!is.na(init_clust)], colMeans), cbind)
-    rownames(tempprofiles) <- colnames(counts)
+    tempprofiles <- sapply(by(x[!is.na(init_clust), ], init_clust[!is.na(init_clust)], colMeans), cbind)
+    rownames(tempprofiles) <- colnames(x)
     
   } else {
     message(paste0("phase 1: random starts in ", n_phase1, " cell subsets"))
@@ -234,14 +287,12 @@ insitutype <- function(counts,
     random_start_subsets <- list()
     for (i in 1:n_starts) {
       random_start_subsets[[i]] <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                                 N = min(n_phase1, nrow(counts)),
-                                                                 seed = NULL)
+                                                                 N = min(n_phase1, nrow(x)))
     }
     
     # get a vector of cells IDs to be used in comparing the random starts:
     benchmarking_subset <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                        N = min(n_benchmark_cells, nrow(counts)),
-                                                        seed = NULL)
+                                                        N = min(n_benchmark_cells, nrow(x)))
 
     # run nbclust from each of the random subsets, and save the profiles:
     profiles_from_random_starts <- list()
@@ -252,7 +303,7 @@ insitutype <- function(counts,
         seq_along(random_start_subsets[[i]])]
      
       profiles_from_random_starts[[i]] <- nbclust(
-        counts = counts[random_start_subsets[[i]], ], 
+        counts = x[random_start_subsets[[i]], ], 
         neg = neg[random_start_subsets[[i]]], 
         bg = bg[random_start_subsets[[i]]],
         fixed_profiles = fixed_profiles,
@@ -269,13 +320,10 @@ insitutype <- function(counts,
     # find which profile matrix does best in the benchmarking subset:
     benchmarking_logliks <- c()
     for (i in 1:n_starts) {
-      templogliks <- parallel::mclapply(asplit(profiles_from_random_starts[[i]], 2),
-                        lldist,
-                        mat = counts[benchmarking_subset, ],
-                        bg = bg[benchmarking_subset],
-                        size = nb_size,
-                        mc.cores = numCores())
-      templogliks <- do.call(cbind, templogliks)
+      templogliks <- lldist(x = profiles_from_random_starts[[i]],
+                            mat = x[benchmarking_subset, ],
+                            bg = bg[benchmarking_subset],
+                            size = nb_size)
       # take the sum of cells' best logliks:
       benchmarking_logliks[i] <- sum(apply(templogliks, 1, max))
     }
@@ -289,8 +337,7 @@ insitutype <- function(counts,
   #### phase 2: -----------------------------------------------------------------
   message(paste0("phase 2: refining best random start in a ", n_phase2, " cell subset"))
   phase2_sample <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                N = min(n_phase2, nrow(counts)),
-                                                seed = NULL)
+                                                N = min(n_phase2, nrow(x)))
   
   # get initial cell type assignments:
   temp_init_clust <- NULL
@@ -300,7 +347,7 @@ insitutype <- function(counts,
   }
   
   # run nbclust, initialized with the cell type assignments derived from the previous phase's profiles
-  clust2 <- nbclust(counts = counts[phase2_sample, ], 
+  clust2 <- nbclust(counts = x[phase2_sample, ], 
                     neg = neg[phase2_sample], 
                     bg = bg[phase2_sample],
                     fixed_profiles = fixed_profiles,
@@ -317,11 +364,10 @@ insitutype <- function(counts,
   message(paste0("phase 3: finalizing clusters in a ", n_phase3, " cell subset"))
   
   phase3_sample <- geoSketch_sample_from_plaids(Plaid = plaid, 
-                                                N = min(n_phase3, nrow(counts)),
-                                                seed = NULL)
+                                                N = min(n_phase3, nrow(x)))
   
   # run nbclust, initialized with the cell type assignments derived from the previous phase's profiles
-  clust3 <- nbclust(counts = counts[phase3_sample, ], 
+  clust3 <- nbclust(counts = x[phase3_sample, ], 
                     neg = neg[phase3_sample], 
                     bg = bg[phase3_sample],
                     fixed_profiles = fixed_profiles,
@@ -336,9 +382,9 @@ insitutype <- function(counts,
   
 
   #### phase 4: -----------------------------------------------------------------
-  message(paste0("phase 4: classifying all ", nrow(counts), " cells"))
+  message(paste0("phase 4: classifying all ", nrow(x), " cells"))
   
-  out <- insitutypeML(counts = counts, 
+  out <- insitutypeML(x = x, 
                       neg = neg, 
                       bg = bg, 
                       reference_profiles = profiles, 
@@ -349,3 +395,24 @@ insitutype <- function(counts,
   
   return(out)
 }
+
+############################
+# S4 method definitions 
+############################
+
+#' @export
+#' @rdname insitutype
+setGeneric("insitutype", function(x, ...) standardGeneric("insitutype"))
+
+#' @export
+#' @rdname insitutype
+setMethod("insitutype", "ANY", .insitutype)
+
+#' @export
+#' @rdname insitutype
+#' @importFrom SummarizedExperiment assay
+#' @importFrom SingleCellExperiment SingleCellExperiment
+setMethod("insitutype", "SingleCellExperiment", function(x, ..., assay.type="counts") {
+  .insitutype(t(assay(x, i=assay.type)), ...)
+})
+
