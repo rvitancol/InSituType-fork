@@ -1,3 +1,7 @@
+# InSituType 1.2.1
+
+* Create "undefined" profile for cells with zero counts
+
 # InSituType 1.2.0
 
 * Also cluster continuous data from protein assay
