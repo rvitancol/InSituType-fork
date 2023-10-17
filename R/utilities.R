@@ -47,6 +47,9 @@ estimateBackground <- function(counts, neg, bg = NULL){
 #' @return a cells * genes count matrix for shared genes only
 alignGenes <- function(counts, profiles){
   sharedgenes <- intersect(rownames(profiles), colnames(counts))
+  if (length(sharedgenes) < 10) {
+    stop("Profiles have fewer than 10 genes in common with panel, use different profiles or re-run InSituType in unsupervised mode.")
+  }
   lostgenes <- setdiff(colnames(counts), rownames(profiles))
   
   # subset:
