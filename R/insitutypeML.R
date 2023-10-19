@@ -44,10 +44,6 @@ NULL
 
 .insitutypeML <- function(x, neg = NULL, bg = NULL, cohort = NULL, reference_profiles, reference_sds=NULL, nb_size = 10, assay_type, align_genes = TRUE) {
   
-  if (any(rowSums(x) == 0)) {
-    stop("Cells with 0 counts were found. Please remove.")
-  }
-  
   # get vector of expected background:
   bg <- estimateBackground(counts = x, neg = neg, bg = bg)
   
@@ -76,6 +72,12 @@ NULL
                                               cohort = cohort, 
                                               minfreq = 1e-4, 
                                               nbaselinecells = 100) 
+  if ("undefined" %in% colnames(logliks)) {
+    logliks <- logliks[, -which(colnames(logliks) == "undefined")]
+  }
+  features <- intersect(rownames(reference_profiles), colnames(x))
+  logliks <- cbind(logliks, ifelse(Matrix::rowSums(x[, features]) == 0, 0, -Inf))
+  colnames(logliks)[ncol(logliks)] <- "undefined"
   
   # get remaining outputs
   clust <- colnames(logliks)[apply(logliks, 1, which.max)]

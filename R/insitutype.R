@@ -167,10 +167,6 @@ NULL
   
   
   #### preliminaries ---------------------------
-
-  if (any(rowSums(x) == 0)) {
-    stop("Cells with 0 counts were found. Please remove.")
-  }
   
   # get vector of expected background:
   bg <- estimateBackground(counts = x, neg = neg, bg = bg)

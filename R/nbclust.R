@@ -279,9 +279,6 @@ nbclust <- function(counts,
 
   #### preliminaries -----------------------------------
   # infer bg if not provided: assume background is proportional to the scaling factor s
-  if (any(rowSums(counts) == 0)) {
-    stop("Cells with 0 counts were found. Please remove.")
-  }
   
   # get vector of expected background:
   bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
