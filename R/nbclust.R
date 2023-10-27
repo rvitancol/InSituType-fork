@@ -53,12 +53,12 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
     bgsub@x <- pmax(bgsub@x, 0)
     bgsub <- Matrix::rowSums(bgsub)
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       xsd <- NULL
       res <- lls_rna(mat=mat, bgsub=bgsub, x=x, bg=bg, size=size)
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       res <- lls_protein(mat=as.matrix(mat), bgsub=bgsub, x=as.matrix(x), xsd=as.matrix(xsd))
     }
     
@@ -72,12 +72,12 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
     # override it if s is negative:
     s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum_of_x
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       yhat <- s %*% t(x) + bg
       res <- stats::dnbinom(x = as.matrix(mat), size = size, mu = yhat, log = TRUE)
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       yhat <- s %*% t(x)
       ysd <- s %*% t(xsd)
       ## Estimate SD for each Cell type and each Protein. 
@@ -180,22 +180,22 @@ Estep <- function(counts, clust, neg, assay_type) {
   # get cluster means:
   means <- sapply(unique(clust), function(cl) {
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       means = pmax(Matrix::colMeans(counts[clust == cl, , drop = FALSE]) - mean(neg[clust == cl]), 0)
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       means = Matrix::colMeans(counts[clust == cl, , drop = FALSE])  #- mean(neg[clust == cl])
     }
     return(means)
   })
   sds <- sapply(unique(clust), function(cl) {
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds = matrix(rep(NA, ncol(counts)), nrow=ncol(counts))
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       sds = apply(counts[clust == cl, , drop = FALSE], 2, sd)  #- sd(neg[clust == cl])
     }
     return(sds)
@@ -324,7 +324,7 @@ nbclust <- function(counts,
     
     ## if no init_sds is provided, use the derived SD profiles
     ## otherwise, use the init_sds
-    if(assay_type %in% c("RNA", "Rna", "rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds <- NULL
     }
   }
@@ -335,7 +335,7 @@ nbclust <- function(counts,
   }
   profiles <- cbind(profiles[, setdiff(colnames(profiles), colnames(fixed_profiles)), drop = FALSE], fixed_profiles)
   
-  if(assay_type %in% c("Protein", "protein")){
+  if(identical(tolower(assay_type), "protein")){
     sds <- cbind(sds[, setdiff(colnames(sds), colnames(fixed_sds)), drop = FALSE], fixed_sds)
   }
   clustnames <- colnames(profiles)
@@ -378,20 +378,20 @@ nbclust <- function(counts,
     lostprofiles <- setdiff(clustnames, colnames(profiles))
     profiles <- cbind(profiles, oldprofiles[, lostprofiles, drop = FALSE])[, clustnames]
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds <- NULL
     }
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       sds <- cbind(sds, oldsds[, lostprofiles, drop = FALSE])[, clustnames]
     }
     
     # keep fixed_profiles unchanged:
     profiles[, colnames(fixed_profiles)] <- as.vector(fixed_profiles)
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds <- NULL
     }
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       sds[, colnames(fixed_sds)] <- as.vector(fixed_sds)
     }
     
@@ -418,7 +418,7 @@ nbclust <- function(counts,
   }
   names(pct_changed) <- paste0("Iter_", seq_len(iter))
 
-  if(assay_type %in% c("Protein", "protein")){
+  if(identical(tolower(assay_type), "protein")){
     sds = sweep(sds, 2, colSums(sds), "/") * 1000
   }
   

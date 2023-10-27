@@ -7,6 +7,7 @@
 chooseClusterNumber(
   counts,
   neg,
+  assay_type,
   bg = NULL,
   fixed_profiles = NULL,
   fixed_sds = NULL,
@@ -18,7 +19,6 @@ chooseClusterNumber(
   align_genes = TRUE,
   plotresults = FALSE,
   nb_size = 10,
-  assay_type,
   pct_drop = 0.005,
   min_prob_increase = 0.05,
   ...
@@ -29,9 +29,13 @@ chooseClusterNumber(
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
+\item{assay_type}{Assay type of RNA, protein}
+
 \item{bg}{Expected background}
 
 \item{fixed_profiles}{Matrix of cluster profiles to hold unchanged throughout iterations.}
+
+\item{fixed_sds}{Matrix of SDs expression of genes x cell types,to hold unchanged throughout iterations. Only for assay_type of protein}
 
 \item{cohort}{Vector of cells' cohort assignments.}
 

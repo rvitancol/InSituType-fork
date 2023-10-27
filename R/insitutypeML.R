@@ -99,7 +99,7 @@ NULL
   logliks <- logliks[, is.element(colnames(logliks), clust), drop = FALSE]
   profiles <- profiles[, colnames(logliks), drop = FALSE]
 
-  if(assay_type %in% c("RNA", "rna", "Rna")){
+  if(identical(tolower(assay_type), "rna")){
     sds <- NULL
   }
   

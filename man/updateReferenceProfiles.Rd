@@ -62,7 +62,7 @@ this many anchors will be discarded.}
 
 \item{blacklist}{vector of genes to be excluded for cell typing (default = NULL)}
 
-\item{rescale}{Logical, flag for platform effect correction (default = FALSE)}
+\item{rescale}{Logical, flag for platform effect correction (default = FALSE).}
 
 \item{refit}{Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)}
 }

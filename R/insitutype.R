@@ -181,7 +181,7 @@ NULL
   fixed_sds <- NULL
   
   if (!is.null(reference_profiles)) { ## This is more for Supervised or Semi-Supervised case 
-    if(is.null(reference_sds) && assay_type %in% c("Protein", "protein")){
+    if(is.null(reference_sds) && identical(tolower(assay_type), "protein")){
       stop("For protein data type, the reference SD profile should be provided!")
     }
     ## Update the profile matrix only for Semi-supervised or Supervised cases ##
@@ -217,10 +217,10 @@ NULL
   if (align_genes && !is.null(fixed_profiles)) {
     x <- alignGenes(counts = x, profiles = fixed_profiles)
     fixed_profiles <- fixed_profiles[colnames(x), ]
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       fixed_sds <- fixed_sds[colnames(x), ]
     }
-    if(assay_type %in% c("RNA", "Rna", "rna")){
+    if(identical(tolower(assay_type), "rna")){
       fixed_sds <- NULL
     }
   }
@@ -395,11 +395,11 @@ NULL
     best_start <- which.max(benchmarking_logliks)
     tempprofiles <- profiles_from_random_starts[[best_start]]
     
-    if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+    if(identical(tolower(assay_type), "protein")){
       tempsds <- sds_from_random_starts[[best_start]]
     }
     
-    if(assay_type %in% c("RNA", "Rna", "rna")){
+    if(identical(tolower(assay_type), "rna")){
       tempsds <- NULL
     }
 

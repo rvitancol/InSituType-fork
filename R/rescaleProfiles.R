@@ -30,7 +30,7 @@
 #'   this many anchors will be discarded.
 #' @param refinement Logical, flag for further anchor refinement via UMAP projection (default = FALSE)
 #' @param blacklist vector of genes to be excluded for cell typing (default = NULL)
-#' @param rescale Logical, flag for platform effect correction (default = FALSE)
+#' @param rescale Logical, flag for platform effect correction (default = FALSE).
 #' @param refit Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)
 #' @return a list 
 #' \describe{
@@ -166,6 +166,7 @@ updateReferenceProfiles <-
       outs[['rescale_res']] <- estimatePlatformEffects(counts = counts[, sharedgenes], 
                                                        neg = neg, 
                                                        bg = bg, 
+                                                       assay_type = assay_type,
                                                        anchors = anchors,
                                                        profiles = reference_profiles[sharedgenes, ],
                                                        sds = reference_sds[sharedgenes, ])
@@ -294,12 +295,15 @@ updateProfilesFromAnchors <-
 #' Calculates gene-wise scaling factor between reference profiles and the observed profiles of the provided anchors.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
+#' @param assay_type Assay type of RNA, protein 
 #' @param bg Expected background
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
 #'   and cell type names for cells to be held constant throughout iterations.
 #' @param profiles Matrix of reference profiles holding mean expression of genes x cell types. 
 #'  Input linear-scale expression, with genes in rows and cell types in columns.
+#' @param sds Matrix of reference profiles holding SDs expression of genes x cell types. 
+#'  Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein
 #' @param blacklist vector of user-defined genes to be excluded for cell typing (default = NULL)
 #' @return A list with five elements: 
 #' \describe{
@@ -318,6 +322,7 @@ updateProfilesFromAnchors <-
 estimatePlatformEffects <- 
   function(counts,
            neg, 
+           assay_type,
            bg=NULL, 
            anchors, 
            profiles,
@@ -352,10 +357,10 @@ estimatePlatformEffects <-
     # (4) near-zero ref but low obs, add to lostgenes. 
     
     # dense array for net count, high memory consumption  
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       netCount_data <- pmax(counts - bg[names(anchors)], 0)
     }
-    if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+    if(identical(tolower(assay_type), "protein")){
       netCount_data <- counts 
     }
     netAvg_perCT <- sapply(cts_to_check, function(ct){
@@ -425,13 +430,13 @@ estimatePlatformEffects <-
     # fastglm estimation with method = 3L to allow non-positive definite matrices 
     percentCores <- 0.25
     PlatformEstimator_fastGLM <- function(df){
-      if(assay_type %in% c("RNA", "Rna")){
+      if(identical(tolower(assay_type), "rna")){
         GLM_Fit<- fastglm::fastglm(x = model.matrix(~Reference : Cell_SF -1, data = df), 
                                    y = df$Counts, offset = df$BG, 
                                    family= stats::poisson(link = "identity"),
                                    start=c(0), method = 3L)
       }
-      if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+      if(identical(tolower(assay_type), "protein")){
         GLM_Fit<- fastglm::fastglm(x = model.matrix(~Reference : Cell_SF -1, data = df), 
                                    y = df$Counts, # offset = df$BG, 
                                    family= stats::gaussian(link = "identity"),
@@ -468,9 +473,15 @@ estimatePlatformEffects <-
     rownames(PlatformEff) <- PlatformEff$Gene
     rescaled_profiles <- diag(PlatformEff[genes_to_keep,]$Beta) %*% profiles[genes_to_keep,]
     rownames(rescaled_profiles) <- genes_to_keep
+    
+    if(identical(tolower(assay_type), "protein")){
+      rescaled_sds <- diag(PlatformEff[genes_to_keep,]$Beta) %*% sds[genes_to_keep,]
+      rownames(rescaled_sds) <- genes_to_keep
+    }else{
+      rescaled_sds <- sds[genes_to_keep,]
+    }
 
-    rescaled_sds <- diag(PlatformEff[genes_to_keep,]$Beta) %*% sds[genes_to_keep,]
-    rownames(rescaled_sds) <- genes_to_keep
+    
     
     return(list(rescaled_profiles = rescaled_profiles,
                 rescaled_sds = rescaled_sds,

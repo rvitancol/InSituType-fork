@@ -19,12 +19,12 @@
 #' prepDataForSketching(counts=mini_nsclc$counts, assay_type="RNA")
 prepDataForSketching <- function(counts, assay_type) {
   # get PCs:
-  if(assay_type %in% c("RNA", "rna", "Rna")){
+  if(identical(tolower(assay_type), "rna")){
     scaling_factors <- pmax(sparseMatrixStats::colQuantiles(counts, probs = 0.99), 5)
     x <- Matrix::t(Matrix::t(counts) / scaling_factors)
     pcres <- irlba::prcomp_irlba(x = x, n = min(20, ncol(counts) - 5), retx = TRUE, center = TRUE, scale. = FALSE)$x
   }
-  if(assay_type %in% c("Protein", "protein")){
+  if(identical(tolower(assay_type), "protein")){
     
     ## when the data is protein data 
     pcres <- irlba::prcomp_irlba(x = counts, n = min(20, ncol(counts) - 5), retx = TRUE, center = TRUE, scale. = TRUE)$x

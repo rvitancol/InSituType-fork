@@ -160,11 +160,11 @@ refineClusters <- function(assay_type="RNA", merges = NULL, to_delete = NULL, su
   newlogliks <- newlogliks[, is.element(colnames(newlogliks), clust), drop = FALSE]
   profiles <- profiles[, colnames(newlogliks), drop = FALSE]
   
-  if(assay_type %in% c("Protein", "Protein", "protein")){
+  if(identical(tolower(assay_type), "protein")){
     sds <- sds[, colnames(newlogliks), drop = FALSE]
   }
   
-  if(assay_type %in% c("RNA", "Rna", "rna")){
+  if(identical(tolower(assay_type), "rna")){
     sds <- NULL
   }
   out <- list(clust = clust, prob = prob, logliks = round(newlogliks, 4), # (rounding logliks to save memory)
