@@ -3,7 +3,7 @@
 #' For a subset of the data, perform clustering under a range of cluster numbers.
 #'  Report on loglikelihood vs. number of clusters, and suggest a best choice.
 #' @param counts Counts matrix, cells * genes. 
-#' @param neg Vector of mean negprobe counts per cell
+#' @param neg Vector of mean negprobe counts per cell (default = "rna")
 #' @param assay_type Assay type of RNA, protein 
 #' @param bg Expected background
 #' @param fixed_profiles Matrix of cluster profiles to hold unchanged throughout iterations.
@@ -43,7 +43,7 @@
 chooseClusterNumber <-
   function(counts,
            neg,
-           assay_type,
+           assay_type = c("rna", "protein"),
            bg = NULL,
            fixed_profiles = NULL,
            fixed_sds = NULL,
@@ -58,6 +58,7 @@ chooseClusterNumber <-
            pct_drop = 0.005,
            min_prob_increase = 0.05,
            ...) {
+    assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))  
 
   # infer bg if not provided: assume background is proportional to the scaling factor s
   s <- rowSums(counts)

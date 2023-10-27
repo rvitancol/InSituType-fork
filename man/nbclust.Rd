@@ -7,7 +7,7 @@
 nbclust(
   counts,
   neg,
-  assay_type,
+  assay_type = c("rna", "protein"),
   bg = NULL,
   fixed_profiles = NULL,
   fixed_sds = NULL,
@@ -27,7 +27,7 @@ nbclust(
 
 \item{neg}{Vector of mean negative probe counts per cell.}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{bg}{Expected background}
 

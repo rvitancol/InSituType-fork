@@ -11,7 +11,7 @@
 #' @param reference_sds Matrix of standard deviation profiles, genes * cell types. Only for assay_type of protein.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param bg Expected background
 #' @param nb_size The size parameter to assume for the NB distribution. Only for assay_type of RNA
 #' @param anchors named vector giving "anchor" cell types with cell_id in names, 
@@ -83,7 +83,7 @@ updateReferenceProfiles <-
            reference_sds,
            counts,
            neg,
-           assay_type, 
+           assay_type = c("rna", "protein"), 
            bg = NULL,
            nb_size = 10,
            anchors = NULL,
@@ -95,6 +95,7 @@ updateReferenceProfiles <-
            blacklist = NULL,
            rescale = FALSE, 
            refit = TRUE) {
+    assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
     
     if(!any(rescale, refit)){
       stop("At least one of `rescale` or `refit` must be TRUE to update the reference profiles.")
@@ -262,7 +263,7 @@ updateReferenceProfiles <-
 #' @param neg Vector of mean negprobe counts per cell. Can be provided
 #' @param bg Expected background
 #' @param anchors Vector of anchor assignments
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' 
 #' @return \enumerate{ 
 #' \item updated_profiles: A mean profiles matrix with the rows rescaled
@@ -274,8 +275,10 @@ updateProfilesFromAnchors <-
   function(counts,
            neg,
            bg = NULL, 
-           assay_type,
+           assay_type = c("rna", "protein"),
            anchors) {
+    assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+    
     bg <- estimateBackground(counts, neg, bg)
     use <- !is.na(anchors)
     updated_profiles_info <- Estep(counts = counts[use, ],
@@ -295,7 +298,7 @@ updateProfilesFromAnchors <-
 #' Calculates gene-wise scaling factor between reference profiles and the observed profiles of the provided anchors.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negprobe counts per cell
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param bg Expected background
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
@@ -322,12 +325,13 @@ updateProfilesFromAnchors <-
 estimatePlatformEffects <- 
   function(counts,
            neg, 
-           assay_type,
+           assay_type = c("rna", "protein"),
            bg=NULL, 
            anchors, 
            profiles,
            sds=NULL,
            blacklist=NULL){
+    assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
     
     #### Step1: clean up and prepare inputs, focus on anchors only
     bg <- estimateBackground(counts = counts, neg = neg, bg = bg)

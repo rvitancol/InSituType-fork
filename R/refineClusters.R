@@ -2,7 +2,7 @@
 #'
 #' Take a user-defined list of cells types to rename/combine, then re-compute
 #' cluster assignments and probabilities under the merged cell types.
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param merges A named vector in which the elements give new cluster names and
 #'   the names give old cluster names. OK to omit cell types that aren't being
 #'   merged.
@@ -38,8 +38,13 @@
 #' to_delete = c("neutrophils")
 #' # example subcluster argument:
 #' subcluster = list("Myofibroblast" = 2:3)
-refineClusters <- function(assay_type="RNA", merges = NULL, to_delete = NULL, subcluster = NULL, logliks,
-                       counts = NULL, neg = NULL, bg = NULL, cohort = NULL) {
+refineClusters <- function(assay_type = c("rna", "protein"), 
+                           merges = NULL, to_delete = NULL, subcluster = NULL, 
+                           logliks,
+                           counts = NULL, 
+                           neg = NULL, bg = NULL, 
+                           cohort = NULL) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
   
   # check that provided cell names are all in logliks:
   if (any(!is.element(names(merges), colnames(logliks)))) {

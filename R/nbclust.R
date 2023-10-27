@@ -7,7 +7,7 @@
 #' @param bg background level (default: 0.01)
 #' @param size the parameters for dnbinom function (default: 10)
 #' @param digits the number of digits for rounding
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #'
 #' @importFrom Matrix rowSums
 #' @importFrom stats dnbinom
@@ -24,7 +24,11 @@
 #' lldist(x = x, mat = mini_nsclc$counts, bg = bg, assay_type="RNA")
 #' 
 
-lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type) {
+lldist <- function(x, xsd=NULL, mat, 
+                   bg = 0.01, size = 10, digits = 2, 
+                   assay_type = c("rna", "protein")) {
+  
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   # convert to matrix form if only a vector was input:
   if (is.vector(mat)) {
@@ -109,7 +113,7 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
 #' @param size NB size parameter
 #' @param digits Round the output to this many digits (saves memory)
 #' @param return_loglik If TRUE, logliks will be returned. If FALSE, probabilities will be returned. 
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' 
 #' @return Matrix of probabilities of each cell belonging to each cluster
 #' @export
@@ -119,7 +123,12 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
 #' sharedgenes <- intersect(rownames(ioprofiles), colnames(mini_nsclc$counts))
 #' Mstep(mini_nsclc$counts, ioprofiles[sharedgenes, ], bg = Matrix::rowMeans(mini_nsclc$neg), cohort = NULL, assay_type="RNA")
   
-Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE, assay_type) {
+Mstep <- function(counts, means, sds=NULL, 
+                  cohort, bg = 0.01, size = 10, 
+                  digits = 2, return_loglik = FALSE, 
+                  assay_type = c("rna", "protein")) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+  
   # get logliks of cells * clusters
   logliks <- lldist(x = means,
                     mat = counts,
@@ -154,7 +163,7 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
 #' @param clust Vector of cluster assignments, or a matrix of probabilities
 #'   of cells (rows) belonging to clusters (columns).
 #' @param neg Vector of mean background counts
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #'
 #' @importFrom Matrix rowSums
 #'
@@ -175,7 +184,9 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
 #' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
 #' Estep(counts = mini_nsclc$counts, clust = unsup$clust, neg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA")
 
-Estep <- function(counts, clust, neg, assay_type) {
+Estep <- function(counts, clust, neg, 
+                  assay_type = c("rna", "protein")) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   # get cluster means:
   means <- sapply(unique(clust), function(cl) {
@@ -210,7 +221,7 @@ Estep <- function(counts, clust, neg, assay_type) {
 #' Cluster single cell gene expression data using an EM algorithm.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negative probe counts per cell. 
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param bg Expected background
 #' @param fixed_profiles Matrix of mean expression profiles to hold unchanged throughout iterations. genes * cell types
 #' @param fixed_sds Matrix of standard deviation profiles of pre-defined
@@ -263,7 +274,7 @@ Estep <- function(counts, clust, neg, assay_type) {
 #'        logresults = FALSE)
 nbclust <- function(counts, 
                     neg, 
-                    assay_type, 
+                    assay_type = c("rna", "protein"), 
                     bg = NULL, 
                     fixed_profiles = NULL,
                     fixed_sds = NULL,
@@ -276,6 +287,7 @@ nbclust <- function(counts,
                     min_prob_increase = 0.05, 
                     max_iters = 40, 
                     logresults = FALSE) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   #### preliminaries -----------------------------------
   # infer bg if not provided: assume background is proportional to the scaling factor s

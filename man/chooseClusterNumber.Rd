@@ -7,7 +7,7 @@
 chooseClusterNumber(
   counts,
   neg,
-  assay_type,
+  assay_type = c("rna", "protein"),
   bg = NULL,
   fixed_profiles = NULL,
   fixed_sds = NULL,
@@ -27,7 +27,7 @@ chooseClusterNumber(
 \arguments{
 \item{counts}{Counts matrix, cells * genes.}
 
-\item{neg}{Vector of mean negprobe counts per cell}
+\item{neg}{Vector of mean negprobe counts per cell (default = "rna")}
 
 \item{assay_type}{Assay type of RNA, protein}
 

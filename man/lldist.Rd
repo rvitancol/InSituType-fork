@@ -5,7 +5,15 @@
 \title{Calculate the likelihood of the expression mat
   using the reference profiles of x}
 \usage{
-lldist(x, xsd = NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type)
+lldist(
+  x,
+  xsd = NULL,
+  mat,
+  bg = 0.01,
+  size = 10,
+  digits = 2,
+  assay_type = c("rna", "protein")
+)
 }
 \arguments{
 \item{x}{a vector of a reference mean profile for the cell type}
@@ -20,7 +28,7 @@ lldist(x, xsd = NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type)
 
 \item{digits}{the number of digits for rounding}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 }
 \value{
 likelihood for profile

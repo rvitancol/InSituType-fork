@@ -10,14 +10,17 @@
 #' 
 #' Process raw counts data for input into geoSketching. 
 #' @param counts Counts matrix: cells x genes 
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' 
 #' @return A matrix of data for geoSketch, with cells in rows and features in columns
 #' @importFrom irlba prcomp_irlba
 #' @examples
 #' data("mini_nsclc")
 #' prepDataForSketching(counts=mini_nsclc$counts, assay_type="RNA")
-prepDataForSketching <- function(counts, assay_type) {
+prepDataForSketching <- function(counts, 
+                                 assay_type = c("rna", "protein")) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+  
   # get PCs:
   if(identical(tolower(assay_type), "rna")){
     scaling_factors <- pmax(sparseMatrixStats::colQuantiles(counts, probs = 0.99), 5)

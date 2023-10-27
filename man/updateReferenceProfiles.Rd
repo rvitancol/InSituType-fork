@@ -9,7 +9,7 @@ updateReferenceProfiles(
   reference_sds,
   counts,
   neg,
-  assay_type,
+  assay_type = c("rna", "protein"),
   bg = NULL,
   nb_size = 10,
   anchors = NULL,
@@ -33,7 +33,7 @@ are specified, by first choosing anchor cells.}
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{bg}{Expected background}
 
