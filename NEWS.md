@@ -1,3 +1,7 @@
+# InSituType 1.2.2
+
+* Add Compatibility of assay_type and platform effect correction 
+
 # InSituType 1.2.1
 
 * Create "undefined" profile for cells with zero counts
