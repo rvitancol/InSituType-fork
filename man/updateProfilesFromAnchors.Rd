@@ -5,7 +5,13 @@
 \title{Use anchor cells to update reference profiles, simply by taking the mean
 profile of the anchors.}
 \usage{
-updateProfilesFromAnchors(counts, neg, bg = NULL, assay_type, anchors)
+updateProfilesFromAnchors(
+  counts,
+  neg,
+  bg = NULL,
+  assay_type = c("rna", "protein"),
+  anchors
+)
 }
 \arguments{
 \item{counts}{Counts matrix, cells * genes.}
@@ -14,7 +20,7 @@ updateProfilesFromAnchors(counts, neg, bg = NULL, assay_type, anchors)
 
 \item{bg}{Expected background}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{anchors}{Vector of anchor assignments}
 }

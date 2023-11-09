@@ -13,7 +13,7 @@ Mstep(
   size = 10,
   digits = 2,
   return_loglik = FALSE,
-  assay_type
+  assay_type = c("rna", "protein")
 )
 }
 \arguments{
@@ -36,7 +36,7 @@ based on cluster frequencies within a cohort.}
 
 \item{return_loglik}{If TRUE, logliks will be returned. If FALSE, probabilities will be returned.}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 }
 \value{
 Matrix of probabilities of each cell belonging to each cluster

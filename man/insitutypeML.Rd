@@ -16,7 +16,7 @@ insitutypeML(x, ...)
   reference_profiles,
   reference_sds = NULL,
   nb_size = 10,
-  assay_type,
+  assay_type = c("rna", "protein"),
   align_genes = TRUE
 )
 
@@ -48,7 +48,7 @@ be defined if assay_type is protein. Default is NULL.}
 
 \item{nb_size}{The size parameter to assume for the NB distribution.}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{align_genes}{Logical, for whether to align the counts matrix and the reference_profiles by gene ID.}
 

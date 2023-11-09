@@ -12,7 +12,7 @@ get_anchor_stats(
   profiles,
   sds,
   size = 10,
-  assay_type,
+  assay_type = c("rna", "protein"),
   min_cosine = 0.3
 )
 }
@@ -34,7 +34,7 @@ Input linear-scale expression, with genes in rows and cell types in columns. Onl
 
 \item{size}{Negative binomial size parameter to be used in likelihood calculation.}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{min_cosine}{Cells must have at least this much cosine similarity to a fixed profile to be used as an anchor.}
 }

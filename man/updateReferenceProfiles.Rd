@@ -9,7 +9,7 @@ updateReferenceProfiles(
   reference_sds,
   counts,
   neg,
-  assay_type,
+  assay_type = c("rna", "protein"),
   bg = NULL,
   nb_size = 10,
   anchors = NULL,
@@ -33,7 +33,7 @@ are specified, by first choosing anchor cells.}
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{bg}{Expected background}
 
@@ -62,7 +62,7 @@ this many anchors will be discarded.}
 
 \item{blacklist}{vector of genes to be excluded for cell typing (default = NULL)}
 
-\item{rescale}{Logical, flag for platform effect correction (default = FALSE)}
+\item{rescale}{Logical, flag for platform effect correction (default = FALSE).}
 
 \item{refit}{Logical, flag for fitting reference profiles to anchors, run after rescale if rescale = TRUE (default = TRUE)}
 }

@@ -7,6 +7,7 @@
 estimatePlatformEffects(
   counts,
   neg,
+  assay_type = c("rna", "protein"),
   bg = NULL,
   anchors,
   profiles,
@@ -19,6 +20,8 @@ estimatePlatformEffects(
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
+
 \item{bg}{Expected background}
 
 \item{anchors}{Vector giving "anchor" cell types, for use in semi-supervised
@@ -27,6 +30,9 @@ and cell type names for cells to be held constant throughout iterations.}
 
 \item{profiles}{Matrix of reference profiles holding mean expression of genes x cell types. 
 Input linear-scale expression, with genes in rows and cell types in columns.}
+
+\item{sds}{Matrix of reference profiles holding SDs expression of genes x cell types. 
+Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein}
 
 \item{blacklist}{vector of user-defined genes to be excluded for cell typing (default = NULL)}
 }
