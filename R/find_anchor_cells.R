@@ -14,7 +14,7 @@
 #' @param size Negative binomial size parameter to be used in likelihood calculation.
 #' @param sds Matrix of reference profiles holding SDs expression of genes x cell types. 
 #'  Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param min_cosine Cells must have at least this much cosine similarity to a fixed profile to be used as an anchor.
 #' @return A list with two elements: cos, the matrix of cosine distances;
 #'  and llr, the matrix of log likelihood ratios of each cell under each cell type vs. the 2nd best cell type.
@@ -29,8 +29,9 @@
 #'                  sds=NULL, 
 #'                  assay_type = "RNA")
 get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
-                             profiles, sds, size = 10, assay_type, 
+                             profiles, sds, size = 10, assay_type = c("rna", "protein"), 
                              min_cosine = 0.3) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
   
   # get vector of expected background:
   bg <- estimateBackground(counts = counts, neg = neg, bg = bg)
@@ -110,7 +111,7 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
 #'   above this threshold to be used as an anchor
 #' @param insufficient_anchors_thresh Cell types that end up with fewer than
 #'   this many anchors will be discarded.
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' 
 #' @return A vector holding anchor cell assignments (or NA) for each cell in the
 #'   counts matrix
@@ -152,8 +153,8 @@ choose_anchors_from_stats <-
            min_cosine = 0.3,
            min_scaled_llr = 0.01,
            insufficient_anchors_thresh = 20,
-           assay_type) {
-    
+           assay_type = c("rna", "protein")) {
+    assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
     
     if (is.null(anchorstats) && (is.null(cos) || is.null(llr))) {
       stop("Must provide either anchorstats or both cos and llr matrices.")
@@ -236,7 +237,7 @@ choose_anchors_from_stats <-
 #' @param sds Matrix of reference profiles holding SDs expression of genes x cell types. 
 #'  Input linear-scale expression, with genes in rows and cell types in columns. Only for assay_type of protein
 #' @param size Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param n_cells Up to this many cells will be taken as anchor points
 #' @param min_cosine Cells must have at least this much cosine similarity to a
 #'   fixed profile to be used as an anchor
@@ -259,10 +260,13 @@ choose_anchors_from_stats <-
 #'                   neg = Matrix::rowMeans(mini_nsclc$neg),
 #'                   profiles = ioprofiles)
 find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
-                              profiles, sds, size = 10, assay_type,  n_cells = 500, 
+                              profiles, sds, size = 10, 
+                              assay_type = c("rna", "protein"),  
+                              n_cells = 500, 
                               min_cosine = 0.3, min_scaled_llr = 0.01, 
                               insufficient_anchors_thresh = 20,
                               refinement = FALSE) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
   
   if (align_genes && !is.null(profiles)) {
     counts <- alignGenes(counts = counts, profiles = profiles)

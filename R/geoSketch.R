@@ -10,21 +10,24 @@
 #' 
 #' Process raw counts data for input into geoSketching. 
 #' @param counts Counts matrix: cells x genes 
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' 
 #' @return A matrix of data for geoSketch, with cells in rows and features in columns
 #' @importFrom irlba prcomp_irlba
 #' @examples
 #' data("mini_nsclc")
 #' prepDataForSketching(counts=mini_nsclc$counts, assay_type="RNA")
-prepDataForSketching <- function(counts, assay_type) {
+prepDataForSketching <- function(counts, 
+                                 assay_type = c("rna", "protein")) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+  
   # get PCs:
-  if(assay_type %in% c("RNA", "rna", "Rna")){
+  if(identical(tolower(assay_type), "rna")){
     scaling_factors <- pmax(sparseMatrixStats::colQuantiles(counts, probs = 0.99), 5)
     x <- Matrix::t(Matrix::t(counts) / scaling_factors)
     pcres <- irlba::prcomp_irlba(x = x, n = min(20, ncol(counts) - 5), retx = TRUE, center = TRUE, scale. = FALSE)$x
   }
-  if(assay_type %in% c("Protein", "protein")){
+  if(identical(tolower(assay_type), "protein")){
     
     ## when the data is protein data 
     pcres <- irlba::prcomp_irlba(x = counts, n = min(20, ncol(counts) - 5), retx = TRUE, center = TRUE, scale. = TRUE)$x

@@ -7,7 +7,7 @@
 #' @param bg background level (default: 0.01)
 #' @param size the parameters for dnbinom function (default: 10)
 #' @param digits the number of digits for rounding
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #'
 #' @importFrom Matrix rowSums
 #' @importFrom stats dnbinom
@@ -24,7 +24,11 @@
 #' lldist(x = x, mat = mini_nsclc$counts, bg = bg, assay_type="RNA")
 #' 
 
-lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_type) {
+lldist <- function(x, xsd=NULL, mat, 
+                   bg = 0.01, size = 10, digits = 2, 
+                   assay_type = c("rna", "protein")) {
+  
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   # convert to matrix form if only a vector was input:
   if (is.vector(mat)) {
@@ -53,12 +57,12 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
     bgsub@x <- pmax(bgsub@x, 0)
     bgsub <- Matrix::rowSums(bgsub)
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       xsd <- NULL
       res <- lls_rna(mat=mat, bgsub=bgsub, x=x, bg=bg, size=size)
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       res <- lls_protein(mat=as.matrix(mat), bgsub=bgsub, x=as.matrix(x), xsd=as.matrix(xsd))
     }
     
@@ -72,12 +76,12 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
     # override it if s is negative:
     s[s <= 0] <- Matrix::rowSums(mat[s <= 0, , drop = FALSE]) / sum_of_x
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       yhat <- s %*% t(x) + bg
       res <- stats::dnbinom(x = as.matrix(mat), size = size, mu = yhat, log = TRUE)
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       yhat <- s %*% t(x)
       ysd <- s %*% t(xsd)
       ## Estimate SD for each Cell type and each Protein. 
@@ -109,7 +113,7 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
 #' @param size NB size parameter
 #' @param digits Round the output to this many digits (saves memory)
 #' @param return_loglik If TRUE, logliks will be returned. If FALSE, probabilities will be returned. 
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' 
 #' @return Matrix of probabilities of each cell belonging to each cluster
 #' @export
@@ -119,7 +123,12 @@ lldist <- function(x, xsd=NULL, mat, bg = 0.01, size = 10, digits = 2, assay_typ
 #' sharedgenes <- intersect(rownames(ioprofiles), colnames(mini_nsclc$counts))
 #' Mstep(mini_nsclc$counts, ioprofiles[sharedgenes, ], bg = Matrix::rowMeans(mini_nsclc$neg), cohort = NULL, assay_type="RNA")
   
-Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits = 2, return_loglik = FALSE, assay_type) {
+Mstep <- function(counts, means, sds=NULL, 
+                  cohort, bg = 0.01, size = 10, 
+                  digits = 2, return_loglik = FALSE, 
+                  assay_type = c("rna", "protein")) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+  
   # get logliks of cells * clusters
   logliks <- lldist(x = means,
                     mat = counts,
@@ -154,7 +163,7 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
 #' @param clust Vector of cluster assignments, or a matrix of probabilities
 #'   of cells (rows) belonging to clusters (columns).
 #' @param neg Vector of mean background counts
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #'
 #' @importFrom Matrix rowSums
 #'
@@ -175,27 +184,29 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
 #' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
 #' Estep(counts = mini_nsclc$counts, clust = unsup$clust, neg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA")
 
-Estep <- function(counts, clust, neg, assay_type) {
+Estep <- function(counts, clust, neg, 
+                  assay_type = c("rna", "protein")) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   # get cluster means:
   means <- sapply(unique(clust), function(cl) {
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       means = pmax(Matrix::colMeans(counts[clust == cl, , drop = FALSE]) - mean(neg[clust == cl]), 0)
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       means = Matrix::colMeans(counts[clust == cl, , drop = FALSE])  #- mean(neg[clust == cl])
     }
     return(means)
   })
   sds <- sapply(unique(clust), function(cl) {
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds = matrix(rep(NA, ncol(counts)), nrow=ncol(counts))
     }
     
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       sds = apply(counts[clust == cl, , drop = FALSE], 2, sd)  #- sd(neg[clust == cl])
     }
     return(sds)
@@ -210,7 +221,7 @@ Estep <- function(counts, clust, neg, assay_type) {
 #' Cluster single cell gene expression data using an EM algorithm.
 #' @param counts Counts matrix, cells * genes.
 #' @param neg Vector of mean negative probe counts per cell. 
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param bg Expected background
 #' @param fixed_profiles Matrix of mean expression profiles to hold unchanged throughout iterations. genes * cell types
 #' @param fixed_sds Matrix of standard deviation profiles of pre-defined
@@ -263,7 +274,7 @@ Estep <- function(counts, clust, neg, assay_type) {
 #'        logresults = FALSE)
 nbclust <- function(counts, 
                     neg, 
-                    assay_type, 
+                    assay_type = c("rna", "protein"), 
                     bg = NULL, 
                     fixed_profiles = NULL,
                     fixed_sds = NULL,
@@ -276,6 +287,7 @@ nbclust <- function(counts,
                     min_prob_increase = 0.05, 
                     max_iters = 40, 
                     logresults = FALSE) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   #### preliminaries -----------------------------------
   # infer bg if not provided: assume background is proportional to the scaling factor s
@@ -324,7 +336,7 @@ nbclust <- function(counts,
     
     ## if no init_sds is provided, use the derived SD profiles
     ## otherwise, use the init_sds
-    if(assay_type %in% c("RNA", "Rna", "rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds <- NULL
     }
   }
@@ -335,7 +347,7 @@ nbclust <- function(counts,
   }
   profiles <- cbind(profiles[, setdiff(colnames(profiles), colnames(fixed_profiles)), drop = FALSE], fixed_profiles)
   
-  if(assay_type %in% c("Protein", "protein")){
+  if(identical(tolower(assay_type), "protein")){
     sds <- cbind(sds[, setdiff(colnames(sds), colnames(fixed_sds)), drop = FALSE], fixed_sds)
   }
   clustnames <- colnames(profiles)
@@ -378,20 +390,20 @@ nbclust <- function(counts,
     lostprofiles <- setdiff(clustnames, colnames(profiles))
     profiles <- cbind(profiles, oldprofiles[, lostprofiles, drop = FALSE])[, clustnames]
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds <- NULL
     }
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       sds <- cbind(sds, oldsds[, lostprofiles, drop = FALSE])[, clustnames]
     }
     
     # keep fixed_profiles unchanged:
     profiles[, colnames(fixed_profiles)] <- as.vector(fixed_profiles)
     
-    if(assay_type %in% c("RNA", "rna", "Rna")){
+    if(identical(tolower(assay_type), "rna")){
       sds <- NULL
     }
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       sds[, colnames(fixed_sds)] <- as.vector(fixed_sds)
     }
     
@@ -418,7 +430,7 @@ nbclust <- function(counts,
   }
   names(pct_changed) <- paste0("Iter_", seq_len(iter))
 
-  if(assay_type %in% c("Protein", "protein")){
+  if(identical(tolower(assay_type), "protein")){
     sds = sweep(sds, 2, colSums(sds), "/") * 1000
   }
   

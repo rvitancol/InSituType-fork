@@ -4,7 +4,7 @@
 \alias{Estep}
 \title{E step: estimate each cluster's mean profile}
 \usage{
-Estep(counts, clust, neg, assay_type)
+Estep(counts, clust, neg, assay_type = c("rna", "protein"))
 }
 \arguments{
 \item{counts}{Counts matrix, cells * genes.}
@@ -14,7 +14,7 @@ of cells (rows) belonging to clusters (columns).}
 
 \item{neg}{Vector of mean background counts}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 }
 \value{
 A matrix of cluster profiles, genes * clusters
