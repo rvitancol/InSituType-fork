@@ -174,7 +174,6 @@ Mstep <- function(counts, means, sds=NULL, cohort, bg = 0.01, size = 10, digits 
 #'  assay_type="RNA",
 #' ) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
 #' Estep(counts = mini_nsclc$counts, clust = unsup$clust, neg = Matrix::rowMeans(mini_nsclc$neg), assay_type="RNA")
-
 Estep <- function(counts, clust, neg, assay_type) {
 
   # get cluster means:
@@ -200,6 +199,7 @@ Estep <- function(counts, clust, neg, assay_type) {
     }
     return(sds)
   })
+  rownames(sds) <- rownames(means)
   
   return(list(profiles=means, sds=sds))
 }
@@ -350,9 +350,10 @@ nbclust <- function(counts,
   }
   
   for (iter in seq_len(max_iters)) {
-    message(paste0("iter ", iter))
+    if (iter %% 5 == 0) {
+      message(paste0("iter ", iter))
+    }
     # M-step: get cell * cluster probs:
-    
     probs <- Mstep(counts = counts,
                    means = profiles,
                    sds=sds,
