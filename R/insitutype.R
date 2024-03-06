@@ -39,7 +39,7 @@
 #'   a matrix.
 #' @param neg Vector of mean negprobe counts per cell
 #' @param bg Expected background
-#' @param assay_type Assay type. Either "RNA" or "protein"
+#' @param assay_type Assay type of RNA, protein (default = "rna")
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
 #'   and cell type names for cells to be held constant throughout iterations.
@@ -136,7 +136,7 @@ NULL
 #' @importFrom Matrix t
 .insitutype <- function(x,
                         neg,
-                        assay_type = "RNA",
+                        assay_type = c("rna", "protein"),
                         bg = NULL,
                         anchors = NULL,
                         cohort = NULL,
@@ -164,7 +164,7 @@ NULL
                         refinement = FALSE, 
                         rescale = FALSE, 
                         refit = TRUE) {
-  
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
   
   #### preliminaries ---------------------------
 
@@ -196,7 +196,7 @@ NULL
   fixed_sds <- NULL
   
   if (!is.null(reference_profiles)) { ## This is more for Supervised or Semi-Supervised case 
-    if(is.null(reference_sds) && assay_type %in% c("Protein", "protein")){
+    if(is.null(reference_sds) && identical(tolower(assay_type), "protein")){
       stop("For protein data type, the reference SD profile should be provided!")
     }
     ## Update the profile matrix only for Semi-supervised or Supervised cases ##
@@ -232,10 +232,10 @@ NULL
   if (align_genes && !is.null(fixed_profiles)) {
     x <- alignGenes(counts = x, profiles = fixed_profiles)
     fixed_profiles <- fixed_profiles[colnames(x), ]
-    if(assay_type %in% c("Protein", "protein")){
+    if(identical(tolower(assay_type), "protein")){
       fixed_sds <- fixed_sds[colnames(x), ]
     }
-    if(assay_type %in% c("RNA", "Rna", "rna")){
+    if(identical(tolower(assay_type), "rna")){
       fixed_sds <- NULL
     }
   }
@@ -410,11 +410,11 @@ NULL
     best_start <- which.max(benchmarking_logliks)
     tempprofiles <- profiles_from_random_starts[[best_start]]
     
-    if(assay_type %in% c("Protein", "protein", "PROTEIN")){
+    if(identical(tolower(assay_type), "protein")){
       tempsds <- sds_from_random_starts[[best_start]]
     }
     
-    if(assay_type %in% c("RNA", "Rna", "rna")){
+    if(identical(tolower(assay_type), "rna")){
       tempsds <- NULL
     }
 

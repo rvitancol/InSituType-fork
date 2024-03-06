@@ -18,7 +18,7 @@
 #'   be defined if assay_type is protein. Default is NULL. 
 #' @param nb_size The size parameter to assume for the NB distribution.
 #' @param align_genes Logical, for whether to align the counts matrix and the reference_profiles by gene ID.
-#' @param assay_type Assay type of RNA, protein 
+#' @param assay_type Assay type of RNA, protein (default = "rna") 
 #' @param ... For the \linkS4class{SingleCellExperiment} method, additional
 #'   arguments to pass to the ANY method.
 #' @param assay.type A string specifying which assay values to use.
@@ -42,11 +42,13 @@
 #' table(sup$clust)
 NULL
 
-.insitutypeML <- function(x, neg = NULL, bg = NULL, cohort = NULL, reference_profiles, reference_sds=NULL, nb_size = 10, assay_type, align_genes = TRUE) {
-  
-  if (any(rowSums(x) == 0)) {
-    stop("Cells with 0 counts were found. Please remove.")
-  }
+.insitutypeML <- function(x, neg = NULL, bg = NULL, cohort = NULL, 
+                          reference_profiles, 
+                          reference_sds=NULL, 
+                          nb_size = 10, 
+                          assay_type = c("rna", "protein"), 
+                          align_genes = TRUE) {
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
   
   # get vector of expected background:
   bg <- estimateBackground(counts = x, neg = neg, bg = bg)
@@ -76,6 +78,12 @@ NULL
                                               cohort = cohort, 
                                               minfreq = 1e-4, 
                                               nbaselinecells = 100) 
+  if ("undefined" %in% colnames(logliks)) {
+    logliks <- logliks[, -which(colnames(logliks) == "undefined")]
+  }
+  features <- intersect(rownames(reference_profiles), colnames(x))
+  logliks <- cbind(logliks, ifelse(Matrix::rowSums(x[, features]) == 0, 0, -Inf))
+  colnames(logliks)[ncol(logliks)] <- "undefined"
   
   # get remaining outputs
   clust <- colnames(logliks)[apply(logliks, 1, which.max)]
@@ -97,7 +105,7 @@ NULL
   logliks <- logliks[, is.element(colnames(logliks), clust), drop = FALSE]
   profiles <- profiles[, colnames(logliks), drop = FALSE]
 
-  if(assay_type %in% c("RNA", "rna", "Rna")){
+  if(identical(tolower(assay_type), "rna")){
     sds <- NULL
   }
   

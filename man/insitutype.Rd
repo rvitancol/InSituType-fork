@@ -11,7 +11,7 @@ insitutype(x, ...)
 \S4method{insitutype}{ANY}(
   x,
   neg,
-  assay_type = "RNA",
+  assay_type = c("rna", "protein"),
   bg = NULL,
   anchors = NULL,
   cohort = NULL,
@@ -54,7 +54,7 @@ arguments to pass to the ANY method.}
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
-\item{assay_type}{Assay type. Either "RNA" or "protein"}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{bg}{Expected background}
 

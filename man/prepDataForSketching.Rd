@@ -4,12 +4,12 @@
 \alias{prepDataForSketching}
 \title{Prepare data for geoSketch}
 \usage{
-prepDataForSketching(counts, assay_type)
+prepDataForSketching(counts, assay_type = c("rna", "protein"))
 }
 \arguments{
 \item{counts}{Counts matrix: cells x genes}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 }
 \value{
 A matrix of data for geoSketch, with cells in rows and features in columns

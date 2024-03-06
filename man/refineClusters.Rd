@@ -5,7 +5,7 @@
 \title{Merge cell types in a clustering result}
 \usage{
 refineClusters(
-  assay_type = "RNA",
+  assay_type = c("rna", "protein"),
   merges = NULL,
   to_delete = NULL,
   subcluster = NULL,
@@ -17,7 +17,7 @@ refineClusters(
 )
 }
 \arguments{
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{merges}{A named vector in which the elements give new cluster names and
 the names give old cluster names. OK to omit cell types that aren't being

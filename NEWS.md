@@ -5,6 +5,26 @@
 * New function `spatialUpdate` for using alternative data types (e.g. space or immunofluorescence) and the Insitutype likelihood framework to update cell typing results from any method. 
 * New functions `getRNAprofiles` and `getProteinParameters`, which serve as user-facing tools for getting profile matrices. 
 
+# InSituType 1.2.2
+
+* Add Compatibility of assay_type and platform effect correction 
+
+# InSituType 1.2.1
+
+* Create "undefined" profile for cells with zero counts
+
+# InSituType 1.2.0
+
+* Also cluster continuous data from protein assay
+
+# InSituType 1.1.1
+
+* Support platform effect correction
+* Support anchor refinement via UMAP projection 
+
+# InSituType 1.1.0
+
+* Support matrices with more than 4B elements
 
 # InSituType 1.0.0
 

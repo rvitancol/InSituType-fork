@@ -10,9 +10,9 @@ find_anchor_cells(
   bg = NULL,
   align_genes = TRUE,
   profiles,
-  sds = NULL,
+  sds,
   size = 10,
-  assay_type = "rna",
+  assay_type = c("rna", "protein"),
   n_cells = 500,
   min_cosine = 0.3,
   min_scaled_llr = 0.01,
@@ -39,7 +39,7 @@ Input linear-scale expression, with genes in rows and cell types in columns. Onl
 
 \item{size}{Negative binomial size parameter to be used in likelihood calculation. Only for assay_type of RNA}
 
-\item{assay_type}{Assay type of RNA, protein}
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 
 \item{n_cells}{Up to this many cells will be taken as anchor points}
 

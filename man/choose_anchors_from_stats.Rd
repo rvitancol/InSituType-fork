@@ -11,11 +11,11 @@ choose_anchors_from_stats(
   anchorstats = NULL,
   cos = NULL,
   llr = NULL,
-  assay_type = "rna",
   n_cells = 500,
   min_cosine = 0.3,
   min_scaled_llr = 0.01,
-  insufficient_anchors_thresh = 20
+  insufficient_anchors_thresh = 20,
+  assay_type = c("rna", "protein")
 )
 }
 \arguments{
@@ -34,8 +34,6 @@ cell types in columns.}
 \item{llr}{Matrix of log likelihood ratios from reference profiles. Cells in
 rows, cell types in columns.}
 
-\item{assay_type}{Assay type of RNA, protein}
-
 \item{n_cells}{Up to this many cells will be taken as anchor points}
 
 \item{min_cosine}{Cells must have at least this much cosine similarity to a
@@ -46,6 +44,8 @@ above this threshold to be used as an anchor}
 
 \item{insufficient_anchors_thresh}{Cell types that end up with fewer than
 this many anchors will be discarded.}
+
+\item{assay_type}{Assay type of RNA, protein (default = "rna")}
 }
 \value{
 A vector holding anchor cell assignments (or NA) for each cell in the
