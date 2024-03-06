@@ -39,7 +39,7 @@
 #'   a matrix.
 #' @param neg Vector of mean negprobe counts per cell
 #' @param bg Expected background
-#' @param assay_type Assay type of RNA, protein (default = "rna")
+#' @param assay_type Assay type of rna, protein (default = "rna")
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
 #'   and cell type names for cells to be held constant throughout iterations.
@@ -119,7 +119,7 @@
 #' unsup <- insitutype(
 #'  x = mini_nsclc$counts,
 #'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  assay_type = "RNA",
+#'  assay_type = "rna",
 #'  n_clusts = 8,
 #'  n_phase1 = 200,
 #'  n_phase2 = 500,
@@ -164,12 +164,13 @@ NULL
                         refinement = FALSE, 
                         rescale = FALSE, 
                         refit = TRUE) {
-  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
   
   #### preliminaries ---------------------------
 
-  if ((assay_type == "RNA") & any(abs(x - round(x)) > 1e-4)) {
-    warning("Non-integer elements of x input, and assay_type is set to RNA. RNA Insitutype should use raw (i.e. integer) counts.")
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+ 
+  if ((assay_type == "rna") & any(abs(x - round(x)) > 1e-4)) {
+    warning("Non-integer elements of x input, and assay_type is set to rna. RNA mode Insitutype should use raw (i.e. integer) counts.")
   }
   
   if (any(rowSums(x) == 0)) {
@@ -219,7 +220,7 @@ NULL
       fixed_profiles <- update_result$updated_profiles
       anchors <- update_result$anchors
       
-      ## If assay_type==RNA, this updated SDs are NULL
+      ## If assay_type==rna, this updated SDs are NULL
       fixed_sds <- update_result$updated_sds
       
     }else{

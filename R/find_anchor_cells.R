@@ -263,7 +263,7 @@ choose_anchors_from_stats <-
 #'                   neg = Matrix::rowMeans(mini_nsclc$neg),
 #'                   profiles = ioprofiles)
 find_anchor_cells <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
-                              profiles, sds = NULL, size = 10, n_cells = 500, 
+                              profiles, sds = NULL, size = 10,
                               assay_type = c("rna", "protein"),  
                               n_cells = 500, 
                               min_cosine = 0.3, min_scaled_llr = 0.01, 

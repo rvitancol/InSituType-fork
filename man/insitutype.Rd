@@ -54,7 +54,7 @@ arguments to pass to the ANY method.}
 
 \item{neg}{Vector of mean negprobe counts per cell}
 
-\item{assay_type}{Assay type of RNA, protein (default = "rna")}
+\item{assay_type}{Assay type of rna, protein (default = "rna")}
 
 \item{bg}{Expected background}
 
@@ -161,7 +161,7 @@ data("mini_nsclc")
 unsup <- insitutype(
  x = mini_nsclc$counts,
  neg = Matrix::rowMeans(mini_nsclc$neg),
- assay_type = "RNA",
+ assay_type = "rna",
  n_clusts = 8,
  n_phase1 = 200,
  n_phase2 = 500,

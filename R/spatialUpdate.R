@@ -13,12 +13,13 @@
 #' \item  Inputing the output of steps (1) and (2) into InSituType::insitutype() to 
 #'  re-calculate cell type. 
 #' }
-#' Paths for using alternative data:
+#' Paths for using alternative data (choose one; if you choose multiple, one will be ignored):
 #' \enumerate{
-#' \item Input your own \code{cohort} vector
-#' \item Input a matrix of alternative data (\code{altdata}) to be automatically clustered into cohorts
 #' \item Input \code{xy} positions (and possibly \code{tissue}). Then cells will be clustered 
-#'  into cohorts based on the expression pattern of their 50 nearest neighoring cells.
+#'  into cohorts based on the expression pattern of their 50 nearest neighboring cells.
+#' \item Input a matrix of alternative data (\code{altdata}) to be automatically clustered into cohorts. This supersedes 
+#'  the altdata matrix derived from the \code{xy} argument.
+#' \item Input your own \code{cohort} vector. This supersedes the above inputs. 
 #' }
 #' @param celltype Vector of cell type assignments to be updated
 #' @param counts Counts matrix (or dgCMatrix), cells * genes.
@@ -33,9 +34,12 @@
 #' @export
 spatialUpdate <- function(celltype, counts, neg, 
                           cohort = NULL, altdata = NULL, xy = NULL, tissue = NULL,
-                          nb_size = 10, assay_type = "rna") {
+                          nb_size = 10, assay_type = c("rna", "protein")) {
+  
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+  
   ## check alternative data args:
-  if ((is.null(cohort) * is.null(altdata)) & is.null(xy)) {
+  if(all(sapply(c(cohort, altdata, xy), is.null))) {
     stop("Must supply cohort, altdata or xy")
   }
   
@@ -43,18 +47,11 @@ spatialUpdate <- function(celltype, counts, neg,
   if (is.null(cohort)) {
     if (is.null(altdata)) {
       # make altdata from cells' neighborhoods:
-      if (is.null(tissue)) {
-        tissue = 1
-      }
-      neighbors <- nearestNeighborGraph(x = xy[, 1], y = xy[, 2], N = 50, subset = tissue) 
-      neighborexpression <- get_neighborhood_expression(counts = counts, neighbors = neighbors) 
-      # save top 20 PCs:
-      temp <- irlba::irlba(neighborexpression, nv = 20)
-      altdata <- temp$u %*% diag(temp$d)
+      altdata <- getSpatialContext(counts = counts, xy = xy, tissue = tissue, 
+                                   N = 50, rad = NULL, dim_reduce_to = 20) 
     }
     # cluster altdata to get cohort:
     cohort <- fastCohorting(mat = altdata, 
-                            n_cohorts = NULL, 
                             gaussian_transform = TRUE) 
   }
   
@@ -65,14 +62,15 @@ spatialUpdate <- function(celltype, counts, neg,
                     assay_type = assay_type)
   
   ## Run supervised cell typing with InSituType
-  res <- insitutype(x = counts, 
+  res <- insitutype(x = counts,
+                    cohort = cohort,
                     neg = neg, 
                     reference_profiles = profiles$profiles,
                     reference_sds = profiles$sds,
                     n_clusts = 0,
                     update_reference_profiles = FALSE,
                     assay_type = assay_type)
-  
+  res$cohort <- cohort
   return(res)
 }
 

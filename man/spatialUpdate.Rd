@@ -13,7 +13,7 @@ spatialUpdate(
   xy = NULL,
   tissue = NULL,
   nb_size = 10,
-  assay_type = "rna"
+  assay_type = c("rna", "protein")
 )
 }
 \arguments{
@@ -48,11 +48,12 @@ Performs this operation by
 \item  Inputing the output of steps (1) and (2) into InSituType::insitutype() to 
  re-calculate cell type. 
 }
-Paths for using alternative data:
+Paths for using alternative data (choose one; if you choose multiple, one will be ignored):
 \enumerate{
-\item Input your own \code{cohort} vector
-\item Input a matrix of alternative data (\code{altdata}) to be automatically clustered into cohorts
 \item Input \code{xy} positions (and possibly \code{tissue}). Then cells will be clustered 
- into cohorts based on the expression pattern of their 50 nearest neighoring cells.
+ into cohorts based on the expression pattern of their 50 nearest neighboring cells.
+\item Input a matrix of alternative data (\code{altdata}) to be automatically clustered into cohorts. This supersedes 
+ the altdata matrix derived from the \code{xy} argument.
+\item Input your own \code{cohort} vector. This supersedes the above inputs. 
 }
 }

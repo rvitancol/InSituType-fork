@@ -167,7 +167,8 @@ Mstep <- function(counts, means, sds=NULL,
 #'
 #' @importFrom Matrix rowSums
 #'
-#' @return A matrix of cluster profiles, genes * clusters
+#' @return A list with two elements: 1.  A matrix of cluster profiles, genes * clusters. 
+#'         2. In protein mode, a matrix holding SDs, also genes * clusters.
 #' @export
 #' @examples 
 #' data("ioprofiles")
@@ -186,6 +187,7 @@ Mstep <- function(counts, means, sds=NULL,
 
 Estep <- function(counts, clust, neg, 
                   assay_type = c("rna", "protein")) {
+  
   assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   # get cluster means:
