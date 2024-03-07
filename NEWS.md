@@ -1,3 +1,9 @@
+# InSituType 1.2.3
+
+* handle collinearity issues with fastCohorting:
+Reduce to 2 PC's.
+If this fails, then try successively smaller # of cohorts with the 2 pc's.
+
 # InSituType 1.2.2
 
 * Add Compatibility of assay_type and platform effect correction 
