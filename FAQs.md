@@ -16,7 +16,7 @@ The broad Insitutype workflow is as follows:
 
 
 ## Choosing nclust
-We recommend choosing a slightly generous value of nclust, then using refineClusters to condense the resulting clusters. For example, if you're running semi-supervised cell typing and you expect to find 5 new clusters, set nclust = 8. Or for unsupervised clustering with an expectation of 12 cell types, set nclust = 16. 
+We recommend choosing a slightly generous value of `nclust`, then using `refineClusters` to condense the resulting clusters. For example, if you're running semi-supervised cell typing and you expect to find 5 new clusters, set `nclust = 8`. Or for unsupervised clustering with an expectation of 12 cell types, `set nclust = 16`. 
 It's generally easy to tell when two clusters come from the same cell type: they'll be adjacent in UMAP space, and the flightpath plot will show them frequently confused with each other. 
 
 Final note: Insitutype splits big clusters with higher counts more aggressively than other clusters. For example, in a tumor study, it will subcluster tumor cells many times before it subclusters e.g. fibroblasts. The simplest solution is to increase nclust as needed, then condense the over-clustered cell type as desired. 
@@ -32,11 +32,11 @@ Insitutype has 3 treatments for reference profiles:
 
 We suggest using the below flowchart to choose from among these options:
 
-![image](https://github.com/Nanostring-Biostats/InSituType/assets/4357938/e58f8196-f226-4641-8dfa-bafd9b3dbfae)
+![image](https://github.com/Nanostring-Biostats/InSituType/assets/4357938/3a35e3fc-790d-49d8-87f2-b542f9d127ed)
 
 ## Confidence Scores
 Insitutype returns a posterior probability for each cell type call. In practice, we have found these probabilities to be overconfident. 
-Here's an image from the preprint demonstrating this phenomenon:
+Below is an image from the preprint demonstrating this phenomenon. For various posterior probability bins, it shows the accuracy rate actually achieved (with a confidence interval). 
 
 ![image](https://github.com/Nanostring-Biostats/InSituType/assets/4357938/f02df11d-405b-411d-8049-4ab3d021d0a4)
 
@@ -85,7 +85,7 @@ We have found the below workflows to be effective and efficent:
 
 ## Targeted subclustering
 
-This is an advanced method. Sometimes it can be hard to subcluster a cell type if manyu of its genes are impacted by contamination from segmentation errors. Immune cells in the context of tumors are a good example.
+This is an advanced method. Sometimes it can be hard to subcluster a cell type if many of its genes are impacted by contamination from segmentation errors. Immune cells in the context of tumors are a good example.
 To subcluster say T-cells in a tumor, you might initially call a single T-cell cluster. Then, considering just these cells and just the genes unlikely to be contaminated in T-cells (genes with high T-cell expression or with low expression in surrounding cell types), run unsupervised Insitutype. 
 
 

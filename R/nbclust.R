@@ -205,7 +205,7 @@ Estep <- function(counts, clust, neg,
   sds <- sapply(unique(clust), function(cl) {
     
     if(identical(tolower(assay_type), "rna")){
-      sds = matrix(rep(NA, ncol(counts)), nrow=ncol(counts))
+      sds = NULL
     }
     
     if(identical(tolower(assay_type), "protein")){

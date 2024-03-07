@@ -162,14 +162,16 @@ NULL
                         min_anchor_llr = 0.03,
                         insufficient_anchors_thresh = 20,
                         refinement = FALSE, 
-                        rescale = FALSE, 
+                        rescale = TRUE, 
                         refit = TRUE) {
   
   #### preliminaries ---------------------------
 
   assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
  
-  if ((assay_type == "rna") & any(abs(x - round(x)) > 1e-4)) {
+  temprows <- sample(seq_len(nrow(x)), 100, replace = TRUE)
+  tempcols <- sample(seq_len(ncol(x)), 100, replace = TRUE)
+  if ((assay_type == "rna") & any(abs(x[temprows, tempcols] - round(x[temprows, tempcols])) > 1e-4)) {
     warning("Non-integer elements of x input, and assay_type is set to rna. RNA mode Insitutype should use raw (i.e. integer) counts.")
   }
   
