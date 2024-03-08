@@ -34,6 +34,8 @@ We suggest using the below flowchart to choose from among these options:
 
 ![image](https://github.com/Nanostring-Biostats/InSituType/assets/4357938/3a35e3fc-790d-49d8-87f2-b542f9d127ed)
 
+For more on starting with a coarse reference then subclustering, see the "Targeted subclustering" discussion further on. 
+
 ## Confidence Scores
 Insitutype returns a posterior probability for each cell type call. In practice, we have found these probabilities to be overconfident. 
 Below is an image from the preprint demonstrating this phenomenon. For various posterior probability bins, it shows the accuracy rate actually achieved (with a confidence interval). 
