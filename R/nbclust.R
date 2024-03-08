@@ -213,7 +213,9 @@ Estep <- function(counts, clust, neg,
     }
     return(sds)
   })
-  rownames(sds) <- rownames(means)
+  if (is.matrix(sds)) {
+    rownames(sds) <- rownames(means)
+  }
   
   return(list(profiles=means, sds=sds))
 }
