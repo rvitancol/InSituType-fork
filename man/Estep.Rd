@@ -18,7 +18,7 @@ of cells (rows) belonging to clusters (columns).}
 }
 \value{
 A list with two elements: 1.  A matrix of cluster profiles, genes * clusters. 
-        2. In protein mode, a matrix holding SDs, also genes * clusters.
+        2. In protein mode, a matrix holding SDs, also genes * clusters. NULL in RNA mode.
 }
 \description{
 Given cell assignments (or posterior probabilities), estimate the mean

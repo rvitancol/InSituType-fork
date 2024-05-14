@@ -169,8 +169,8 @@ NULL
 
   assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
  
-  temprows <- sample(seq_len(nrow(x)), 100, replace = TRUE)
-  tempcols <- sample(seq_len(ncol(x)), 100, replace = TRUE)
+  temprows <- sample(seq_len(nrow(x)), min(c(1000, nrow(x))), replace = TRUE)
+  tempcols <- sample(seq_len(ncol(x)), min(c(1000, nrow(x))), replace = TRUE)
   if ((assay_type == "rna") & any(abs(x[temprows, tempcols] - round(x[temprows, tempcols])) > 1e-4)) {
     warning("Non-integer elements of x input, and assay_type is set to rna. RNA mode Insitutype should use raw (i.e. integer) counts.")
   }

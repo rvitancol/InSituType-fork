@@ -7,17 +7,16 @@ set.seed(0)
 
 
 # test V1.0 syntax still works for back-compatibility:
+sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
+semisup <- insitutype(
+  x = mini_nsclc$counts[, sharedgenes],
+  neg = Matrix::rowMeans(mini_nsclc$neg),
+  n_clusts = c(5, 6),
+  reference_profiles = ioprofiles[sharedgenes, 1:3],
+  update_reference_profiles = FALSE,
+  max_iters = 3
+) 
 test_that("old syntax semi-sup still runs", {
-  sharedgenes <- intersect(colnames(mini_nsclc$counts), rownames(ioprofiles))
-  semisup <- insitutype(
-    x = mini_nsclc$counts[, sharedgenes],
-    neg = Matrix::rowMeans(mini_nsclc$neg),
-    n_clusts = c(5, 6),
-    reference_profiles = ioprofiles[sharedgenes, 1:3],
-    update_reference_profiles = FALSE,
-    max_iters = 3
-  ) 
-  
   expect_true(all(is.element(c("clust","prob","profiles","logliks","logliks_from_lost_celltypes"), names(semisup))))
 })
 

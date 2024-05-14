@@ -33,7 +33,7 @@ get_anchor_stats <- function(counts, neg = NULL, bg = NULL, align_genes = TRUE,
                              min_cosine = 0.3) {
   
   assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
-  if(is.null(sds) && assay_type %in% c("Protein", "protein")){
+  if(is.null(sds) && assay_type == "protein"){
      stop("sds must be entered for protein mode") 
   }
   # get vector of expected background:

@@ -168,7 +168,7 @@ Mstep <- function(counts, means, sds=NULL,
 #' @importFrom Matrix rowSums
 #'
 #' @return A list with two elements: 1.  A matrix of cluster profiles, genes * clusters. 
-#'         2. In protein mode, a matrix holding SDs, also genes * clusters.
+#'         2. In protein mode, a matrix holding SDs, also genes * clusters. NULL in RNA mode.
 #' @export
 #' @examples 
 #' data("ioprofiles")
@@ -202,17 +202,16 @@ Estep <- function(counts, clust, neg,
     }
     return(means)
   })
-  sds <- sapply(unique(clust), function(cl) {
-    
-    if(identical(tolower(assay_type), "rna")){
-      sds = NULL
-    }
-    
-    if(identical(tolower(assay_type), "protein")){
+
+  if(identical(tolower(assay_type), "rna")){
+    sds = NULL
+  }
+  if(identical(tolower(assay_type), "protein")){
+    sds <- sapply(unique(clust), function(cl) {
       sds = apply(counts[clust == cl, , drop = FALSE], 2, sd)  #- sd(neg[clust == cl])
-    }
-    return(sds)
-  })
+      return(sds)
+    })
+  }
   if (is.matrix(sds)) {
     rownames(sds) <- rownames(means)
   }

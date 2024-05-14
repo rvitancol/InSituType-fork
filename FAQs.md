@@ -16,7 +16,7 @@ The broad Insitutype workflow is as follows:
 
 
 ## Choosing nclust
-We recommend choosing a slightly generous value of `nclust`, then using `refineClusters` to condense the resulting clusters. For example, if you're running semi-supervised cell typing and you expect to find 5 new clusters, set `nclust = 8`. Or for unsupervised clustering with an expectation of 12 cell types, `set nclust = 16`. 
+We recommend choosing a slightly generous value of `nclust`, then using `refineClusters` to condense the resulting clusters. For example, if you're running semi-supervised cell typing and you expect to find 5 new clusters, set `nclust = 8`. Or for unsupervised clustering with an expectation of 12 cell types, set `nclust = 16`. 
 It's generally easy to tell when two clusters come from the same cell type: they'll be adjacent in UMAP space, and the flightpath plot will show them frequently confused with each other. 
 
 Final note: Insitutype splits big clusters with higher counts more aggressively than other clusters. For example, in a tumor study, it will subcluster tumor cells many times before it subclusters e.g. fibroblasts. The simplest solution is to increase nclust as needed, then condense the over-clustered cell type as desired. 
@@ -32,7 +32,7 @@ Insitutype has 3 treatments for reference profiles:
 
 We suggest using the below flowchart to choose from among these options:
 
-![image](https://github.com/Nanostring-Biostats/InSituType/assets/4357938/3a35e3fc-790d-49d8-87f2-b542f9d127ed)
+![image](https://github.com/Nanostring-Biostats/InSituType/assets/4357938/824dec47-2221-4fe8-92a0-15693c749d55)
 
 For more on starting with a coarse reference then subclustering, see the "Targeted subclustering" discussion further on. 
 

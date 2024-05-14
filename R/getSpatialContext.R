@@ -153,7 +153,6 @@ neighbor_colMeans <- function(x, neighbors) {
 #' @param neighbors A (probably sparse) adjacency matrix
 neighbor_colSums <- function(x, neighbors) {
   neighbors@x <- rep(1, length(neighbors@x))
-  #neighbors <- Matrix::Diagonal(x=rep(1, nrow(neighbors)),names=rownames(neighbors)) %*% neighbors
   neighbors <- Matrix::Diagonal(x=rep(1, nrow(neighbors))) %*% neighbors
   neighbors@x[neighbors@x==0] <- 1
   out <- neighbors %*% x

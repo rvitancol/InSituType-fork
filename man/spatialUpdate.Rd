@@ -48,7 +48,7 @@ Performs this operation by
 \item  Inputing the output of steps (1) and (2) into InSituType::insitutype() to 
  re-calculate cell type. 
 }
-Paths for using alternative data (choose one; if you choose multiple, one will be ignored):
+Paths for using alternative data in priority order (choose one; if multiple are input, only the most downstream option will be used):
 \enumerate{
 \item Input \code{xy} positions (and possibly \code{tissue}). Then cells will be clustered 
  into cohorts based on the expression pattern of their 50 nearest neighboring cells.

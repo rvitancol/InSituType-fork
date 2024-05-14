@@ -37,7 +37,7 @@ insitutype(x, ...)
   min_anchor_llr = 0.03,
   insufficient_anchors_thresh = 20,
   refinement = FALSE,
-  rescale = FALSE,
+  rescale = TRUE,
   refit = TRUE
 )
 
