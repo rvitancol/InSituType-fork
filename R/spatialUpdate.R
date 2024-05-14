@@ -29,7 +29,7 @@
 #' @param xy 2-column matrix of cells' xy positions. 
 #' @param tissue Vector giving cells' tissue IDs. Used to separate tissue with overlapping xy coordinates.
 #' @param nb_size The size parameter to assume for the NB distribution.
-#' @param assay.type A string specifying which assay values to use.
+#' @param assay_type A string specifying which assay values to use.
 #' @importFrom irlba irlba
 #' @export
 spatialUpdate <- function(celltype, counts, neg, 

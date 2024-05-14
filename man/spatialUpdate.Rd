@@ -33,7 +33,7 @@ spatialUpdate(
 
 \item{nb_size}{The size parameter to assume for the NB distribution.}
 
-\item{assay.type}{A string specifying which assay values to use.}
+\item{assay_type}{A string specifying which assay values to use.}
 }
 \description{
 Takes cell typing results, then updates it based on alternative data types, 
