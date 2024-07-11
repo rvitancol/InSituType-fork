@@ -17,7 +17,8 @@ of cells (rows) belonging to clusters (columns).}
 \item{assay_type}{Assay type of RNA, protein (default = "rna")}
 }
 \value{
-A matrix of cluster profiles, genes * clusters
+A list with two elements: 1.  A matrix of cluster profiles, genes * clusters. 
+        2. In protein mode, a matrix holding SDs, also genes * clusters. NULL in RNA mode.
 }
 \description{
 Given cell assignments (or posterior probabilities), estimate the mean

@@ -66,3 +66,20 @@
 #' @format A matrix of 11844 cells and 2 columns
 "tonsil_annotation"
 
+
+#' Example human marker proteins 
+#'  For inputting \code{into gen_profiles_protein_expression()}
+#' 
+#'  data frame
+#'
+#' @format A matrix of 11844 cells and 2 columns
+"human_signature"
+
+
+#' Example mouse marker proteins 
+#'  For inputting \code{into gen_profiles_protein_expression()}
+#' 
+#'  data frame
+#'
+#' @format A matrix of 11844 cells and 2 columns
+"mouse_signature"

@@ -10,7 +10,7 @@ get_anchor_stats(
   bg = NULL,
   align_genes = TRUE,
   profiles,
-  sds,
+  sds = NULL,
   size = 10,
   assay_type = c("rna", "protein"),
   min_cosine = 0.3

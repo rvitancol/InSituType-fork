@@ -39,7 +39,7 @@
 #'   a matrix.
 #' @param neg Vector of mean negprobe counts per cell
 #' @param bg Expected background
-#' @param assay_type Assay type of RNA, protein (default = "rna")
+#' @param assay_type Assay type of rna, protein (default = "rna")
 #' @param anchors Vector giving "anchor" cell types, for use in semi-supervised
 #'   clustering. Vector elements will be mainly NA's (for non-anchored cells)
 #'   and cell type names for cells to be held constant throughout iterations.
@@ -119,7 +119,7 @@
 #' unsup <- insitutype(
 #'  x = mini_nsclc$counts,
 #'  neg = Matrix::rowMeans(mini_nsclc$neg),
-#'  assay_type = "RNA",
+#'  assay_type = "rna",
 #'  n_clusts = 8,
 #'  n_phase1 = 200,
 #'  n_phase2 = 500,
@@ -162,11 +162,29 @@ NULL
                         min_anchor_llr = 0.03,
                         insufficient_anchors_thresh = 20,
                         refinement = FALSE, 
-                        rescale = FALSE, 
+                        rescale = TRUE, 
                         refit = TRUE) {
-  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
   
   #### preliminaries ---------------------------
+
+  assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
+ 
+  temprows <- sample(seq_len(nrow(x)), min(c(1000, nrow(x))), replace = TRUE)
+  tempcols <- sample(seq_len(ncol(x)), min(c(1000, nrow(x))), replace = TRUE)
+  if ((assay_type == "rna") & any(abs(x[temprows, tempcols] - round(x[temprows, tempcols])) > 1e-4)) {
+    warning("Non-integer elements of x input, and assay_type is set to rna. RNA mode Insitutype should use raw (i.e. integer) counts.")
+  }
+  
+  if (any(rowSums(x) == 0)) {
+    stop("Cells with 0 counts were found. Please remove.")
+  }
+  
+  if (is.data.frame(reference_profiles)) {
+    reference_profiles <- as.matrix(reference_profiles)
+  }
+  if (is.data.frame(reference_sds)) {
+    reference_sds <- as.matrix(reference_sds)
+  }
   
   # get vector of expected background:
   bg <- estimateBackground(counts = x, neg = neg, bg = bg)
@@ -204,7 +222,7 @@ NULL
       fixed_profiles <- update_result$updated_profiles
       anchors <- update_result$anchors
       
-      ## If assay_type==RNA, this updated SDs are NULL
+      ## If assay_type==rna, this updated SDs are NULL
       fixed_sds <- update_result$updated_sds
       
     }else{

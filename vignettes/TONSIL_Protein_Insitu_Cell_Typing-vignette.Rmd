@@ -123,13 +123,12 @@ unsup <- insitutype(
   n_clusts = 10,
   # NULL value runs unsupervised clustering; entering a matrix here would run
   # semi-supervised clustering.
-  n_phase1 = 200,
-  n_phase2 = 500,
-  n_phase3 = 2000,
-  n_starts = 1,
-  max_iters = 5
+  n_phase1 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_phase2 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_phase3 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_starts = 1, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  max_iters = 5 # inadvisably low number chosen to speed the vignette; you should use the functions defaults
 ) 
-# choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
 ```
 
 ### Supervised clustering:
@@ -152,12 +151,13 @@ sup <- insitutype(
   # condensed to save time. n_clusts = 5:20 would be more optimal
   # NULL value runs unsupervised clustering; entering a matrix here would run
   # semi-supervised clustering.
-  update_reference_profiles = TRUE,
-  n_phase2 = 500,
-  n_phase3 = 2000,
-  n_starts = 1,
-  max_iters = 5
-) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
+  update_reference_profiles = FALSE,
+  n_phase1 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_phase2 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_phase3 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_starts = 1, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  max_iters = 5 # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+) 
 ```
 
 ### Semi-supervised clustering:
@@ -180,12 +180,13 @@ semi_sup <- insitutype(
   # condensed to save time. n_clusts = 5:20 would be more optimal
   # NULL value runs unsupervised clustering; entering a matrix here would run
   # semi-supervised clustering.
-  update_reference_profiles = TRUE,
-  n_phase2 = 500,
-  n_phase3 = 2000,
-  n_starts = 1,
-  max_iters = 5
-) # choosing inadvisably low numbers to speed the vignette; using the defaults in recommended.
+  update_reference_profiles = FALSE,
+  n_phase1 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_phase2 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_phase3 = 1000, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  n_starts = 1, # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+  max_iters = 5 # inadvisably low number chosen to speed the vignette; you should use the functions defaults
+) 
 ```
 
 The function returns 4 useful outputs: a vector of cells cluster assignments, 

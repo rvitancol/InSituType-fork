@@ -10,7 +10,7 @@ find_anchor_cells(
   bg = NULL,
   align_genes = TRUE,
   profiles,
-  sds,
+  sds = NULL,
   size = 10,
   assay_type = c("rna", "protein"),
   n_cells = 500,

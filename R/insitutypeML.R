@@ -57,7 +57,9 @@ NULL
   if (align_genes) {
     x <- alignGenes(counts = x, profiles = reference_profiles)
     reference_profiles <- reference_profiles[colnames(x), ]
-    reference_sds <- reference_sds[colnames(x), ]
+    if (!is.null(reference_sds)) {
+      reference_sds <- reference_sds[colnames(x), ]
+    }
   }
   
   # prep cohort vector:

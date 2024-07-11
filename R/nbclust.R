@@ -167,7 +167,8 @@ Mstep <- function(counts, means, sds=NULL,
 #'
 #' @importFrom Matrix rowSums
 #'
-#' @return A matrix of cluster profiles, genes * clusters
+#' @return A list with two elements: 1.  A matrix of cluster profiles, genes * clusters. 
+#'         2. In protein mode, a matrix holding SDs, also genes * clusters. NULL in RNA mode.
 #' @export
 #' @examples 
 #' data("ioprofiles")
@@ -186,6 +187,7 @@ Mstep <- function(counts, means, sds=NULL,
 
 Estep <- function(counts, clust, neg, 
                   assay_type = c("rna", "protein")) {
+  
   assay_type <- match.arg(tolower(assay_type), c("rna", "protein"))
 
   # get cluster means:
@@ -200,17 +202,19 @@ Estep <- function(counts, clust, neg,
     }
     return(means)
   })
-  sds <- sapply(unique(clust), function(cl) {
-    
-    if(identical(tolower(assay_type), "rna")){
-      sds = matrix(rep(NA, ncol(counts)), nrow=ncol(counts))
-    }
-    
-    if(identical(tolower(assay_type), "protein")){
+
+  if(identical(tolower(assay_type), "rna")){
+    sds = NULL
+  }
+  if(identical(tolower(assay_type), "protein")){
+    sds <- sapply(unique(clust), function(cl) {
       sds = apply(counts[clust == cl, , drop = FALSE], 2, sd)  #- sd(neg[clust == cl])
-    }
-    return(sds)
-  })
+      return(sds)
+    })
+  }
+  if (is.matrix(sds)) {
+    rownames(sds) <- rownames(means)
+  }
   
   return(list(profiles=means, sds=sds))
 }
@@ -359,9 +363,10 @@ nbclust <- function(counts,
   }
   
   for (iter in seq_len(max_iters)) {
-    message(paste0("iter ", iter))
+    if (iter %% 5 == 0) {
+      message(paste0("iter ", iter))
+    }
     # M-step: get cell * cluster probs:
-    
     probs <- Mstep(counts = counts,
                    means = profiles,
                    sds=sds,
