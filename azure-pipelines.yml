@@ -1,10 +1,16 @@
-trigger:
-  branches:
-    include:
-      - sbs-dev-1.3
+trigger: none
+
+parameters:
+  - name: imageTag
+    displayName: 'Enter nanopipeline-build-environment image tag from last build https://dev.azure.com/Nanostring/Gemini/_build?definitionId=525&_a=summary'
+    default: '1.3.2-94008'
+    type: string
 
 resources:
 - repo: self
+
+variables:
+  group: smida-build-pipeline-devnext-variables
 
 stages:
 - stage: Build
@@ -24,13 +30,13 @@ stages:
         regionName: '$(AWS_REGION)'
         repository: 'ecr-cac1-devnext-cosmx_da_repo-devnext-hub-smida-nanopipeline-build-environment'
         imageSource: 'imagetag'
-        imageTag: 'latest'
+        imageTag: ${{ parameters.imageTag }}
     - task: Bash@3
       displayName: Run smida-nanopipeline-build-environment Docker Image
       inputs:
         targetType: 'inline'
         script: |
-          docker run --rm -v "$(Build.SourcesDirectory)":"/source" $(DEVNEXT_HUB_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/ecr-cac1-devnext-cosmx_da_repo-devnext-hub-smida-nanopipeline-build-environment:latest
+          docker run --rm -v "$(Build.SourcesDirectory)":"/source" $(DEVNEXT_HUB_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/ecr-cac1-devnext-cosmx_da_repo-devnext-hub-smida-nanopipeline-build-environment:${{ parameters.imageTag }}
     - task: Bash@3
       displayName: Copy .tar.gz file as latest
       inputs:
